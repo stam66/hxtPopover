@@ -90,7 +90,7 @@ command updatePopovers pMode
 end updatePopovers
 ```
 
-This is the same `hxtAppearance` property the widgets bundled with HyperXTalk use. The IDE sets it for those widgets automatically; at the time of writing it does not do so for widgets installed as extensions, so while editing in the IDE a popover stays light unless your stack's own handlers set it.
+This is the same `hxtAppearance` property the widgets bundled with HyperXTalk use, and the IDE sets it for those widgets automatically. It does the same for widgets installed as extensions, such as this one, only in builds that include [PR 599](https://github.com/emily-elizabeth/HyperXTalk/pull/599), which is open at the time of writing. In earlier builds a popover stays light while you edit in the IDE unless your stack's own handlers set it.
 
 ## Building from source
 
@@ -118,7 +118,7 @@ It compiles `popover.lcb` with that checkout's `lc-compile`, generates the dicti
 ## Limitations
 
 - Developed and tested on macOS only.
-- In the IDE, popovers do not switch to dark mode on their own (see Dark mode).
+- In the IDE, popovers switch to dark mode on their own only in HyperXTalk builds that include [PR 599](https://github.com/emily-elizabeth/HyperXTalk/pull/599). In earlier builds, set `hxtAppearance` from your stack (see Dark mode).
 
 ## Licence
 
