@@ -1,0 +1,1319 @@
+/*
+hxtPopover: a popover bubble for HyperXTalk.
+
+The widget draws a rounded rectangle with an arrow on one side and, optionally,
+a block of wrapped text inside it. A widget cannot contain other controls, so
+to show controls in the popover leave the text empty, place the controls over
+the widget (the contentRect property says where) and group them with it.
+*/
+
+widget com.hyperxtalk.widget.popover
+
+use com.livecode.canvas
+use com.livecode.widget
+use com.livecode.engine
+
+metadata title is "Popover"
+metadata author is "Stam Kapetanakis"
+metadata version is "0.1.0"
+metadata preferredSize is "240,140"
+metadata svgicon is "M4,2h56a4,4,0,0,1,4,4v32a4,4,0,0,1,-4,4H38l-6,10l-6,-10H4a4,4,0,0,1,-4,-4V6a4,4,0,0,1,4,-4z"
+
+--------------------------------------------------------------------------------
+-- Properties
+--------------------------------------------------------------------------------
+
+/**
+Syntax: set the styledText of <widget> to <pStyledText>
+Syntax: get the styledText of <widget>
+
+Summary: The styled text shown inside the popover
+
+Parameters:
+pStyledText (array): Styled text in the same layout as the styledText of a field.
+
+Description:
+The <styledText> is an array of paragraphs, each with a "runs" array of text
+runs, exactly as a field's styledText property gives it, so text can be
+styled in a field and copied across:
+
+    set the styledText of widget "Popover" to the styledText of field "Source"
+
+It is also what the Contents tab of the property inspector edits.
+
+The widget draws these styles: textFont, textSize, textColor,
+backgroundColor and the bold, italic, underline and strikeout textStyles of a
+run, and the textAlign of a paragraph. Other styles (links, lists, indents,
+tabs, images) are kept in the array but not drawn.
+
+Text without a style of its own uses the widget's textFont, textSize,
+textStyle and <fontColor>; a paragraph without a textAlign uses <textAlign>.
+The text is wrapped to the width of the content area and clipped if it does
+not fit. Leave it empty when the popover is only a backdrop for other
+controls.
+
+Related: text (property), textAlign (property), textVerticalAlign (property), fontColor (property), contentMargin (property)
+**/
+-- The IDE has its own definitions of "styledText" and "text"; anything stated
+-- here takes precedence over them. The styled text gets the inspector's
+-- Contents tab, with the editor a field's contents have.
+property "styledText" get getStyledText set setStyledText
+metadata styledText.editor is "com.livecode.pi.styledText"
+metadata styledText.user_visible is "true"
+metadata styledText.section is "Contents"
+metadata styledText.label is "Contents"
+
+/**
+Syntax: set the text of <widget> to <pText>
+Syntax: get the text of <widget>
+
+Summary: The text shown inside the popover, without its styles
+
+Parameters:
+pText (string): The text to show. May contain several lines.
+
+Description:
+Setting the <text> replaces the popover's contents with unstyled text.
+Getting it returns the contents of the <styledText> as plain text.
+
+Related: styledText (property)
+**/
+property "text" get getText set setText
+metadata text.user_visible is "false"
+
+/**
+Syntax: set the textAlign of <widget> to <pAlign>
+Syntax: get the textAlign of <widget>
+
+Summary: The horizontal alignment of the text
+
+Parameters:
+pAlign (enum): The alignment
+- "left"
+- "center"
+- "right"
+
+Related: text (property)
+**/
+property "textAlign" get mTextAlign set setTextAlign
+metadata textAlign.editor is "com.livecode.pi.enum"
+metadata textAlign.options is "left,center,right"
+metadata textAlign.default is "center"
+metadata textAlign.label is "Text align"
+metadata textAlign.section is "Basic"
+
+/**
+Syntax: set the textVerticalAlign of <widget> to <pAlign>
+Syntax: get the textVerticalAlign of <widget>
+
+Summary: The vertical alignment of the text
+
+Parameters:
+pAlign (enum): The alignment
+- "top"
+- "center"
+- "bottom"
+
+Related: text (property)
+**/
+property textVerticalAlign get mTextVAlign set setTextVAlign
+metadata textVerticalAlign.editor is "com.livecode.pi.enum"
+metadata textVerticalAlign.options is "top,center,bottom"
+metadata textVerticalAlign.default is "center"
+metadata textVerticalAlign.label is "Text vertical align"
+
+/**
+Syntax: set the arrowSide of <widget> to <pSide>
+Syntax: get the arrowSide of <widget>
+
+Summary: The side of the popover the arrow is on
+
+Parameters:
+pSide (enum): The side
+- "left"
+- "top"
+- "right"
+- "bottom"
+- "none"
+
+Description:
+The arrow is drawn inside the widget's rectangle, so the body of the popover
+is smaller than the widget by the <arrowSize> on that side.
+
+Related: arrowPosition (property), arrowSize (property)
+**/
+property arrowSide get mArrowSide set setArrowSide
+metadata arrowSide.editor is "com.livecode.pi.enum"
+metadata arrowSide.options is "left,top,right,bottom,none"
+metadata arrowSide.default is "bottom"
+metadata arrowSide.label is "Arrow side"
+
+/**
+Syntax: set the arrowPosition of <widget> to <pPercent>
+Syntax: get the arrowPosition of <widget>
+
+Summary: Where the arrow sits along its side
+
+Parameters:
+pPercent (number): 0 to 100. 0 is the left or top end of the side, 100 the right or bottom end.
+
+Description:
+The arrow always stays clear of the rounded corners.
+
+Related: arrowSide (property), arrowSize (property)
+**/
+property arrowPosition get mArrowPosition set setArrowPosition
+metadata arrowPosition.editor is "com.livecode.pi.number"
+metadata arrowPosition.min is "0"
+metadata arrowPosition.max is "100"
+metadata arrowPosition.step is "1"
+metadata arrowPosition.default is "50"
+metadata arrowPosition.label is "Arrow position (%)"
+
+/**
+Syntax: set the arrowSize of <widget> to <pSize>
+Syntax: get the arrowSize of <widget>
+
+Summary: The length of the arrow in pixels
+
+Parameters:
+pSize (number): How far the arrow sticks out from the body. Its base is twice as wide.
+
+Related: arrowSide (property), arrowPosition (property)
+**/
+property arrowSize get mArrowSize set setArrowSize
+metadata arrowSize.editor is "com.livecode.pi.number"
+metadata arrowSize.min is "0"
+metadata arrowSize.max is "100"
+metadata arrowSize.step is "1"
+metadata arrowSize.default is "12"
+metadata arrowSize.label is "Arrow size"
+
+/**
+Syntax: set the cornerRadius of <widget> to <pRadius>
+Syntax: get the cornerRadius of <widget>
+
+Summary: The radius of the popover's corners in pixels
+
+Parameters:
+pRadius (number): The radius. It is limited to half of the body's shorter side.
+**/
+property cornerRadius get mCornerRadius set setCornerRadius
+metadata cornerRadius.editor is "com.livecode.pi.number"
+metadata cornerRadius.min is "0"
+metadata cornerRadius.max is "100"
+metadata cornerRadius.step is "1"
+metadata cornerRadius.default is "10"
+metadata cornerRadius.label is "Corner radius"
+
+/**
+Syntax: set the lineSize of <widget> to <pSize>
+Syntax: get the lineSize of <widget>
+
+Summary: The thickness of the popover's outline in pixels
+
+Parameters:
+pSize (number): The thickness. 0 draws no outline.
+
+Related: lineColor (property)
+**/
+property "lineSize" get mLineSize set setLineSize
+metadata lineSize.editor is "com.livecode.pi.number"
+metadata lineSize.min is "0"
+metadata lineSize.max is "20"
+metadata lineSize.step is "0.5"
+metadata lineSize.default is "1"
+metadata lineSize.label is "Line size"
+
+/**
+Syntax: set the contentMargin of <widget> to <pMargin>
+Syntax: get the contentMargin of <widget>
+
+Summary: The space between the popover's outline and its content
+
+Parameters:
+pMargin (number): The margin in pixels.
+
+Description:
+The margin applies to the <text> and to the <contentRect>.
+
+Related: contentRect (property), text (property)
+**/
+property contentMargin get mMargin set setMargin
+metadata contentMargin.editor is "com.livecode.pi.number"
+metadata contentMargin.min is "0"
+metadata contentMargin.max is "100"
+metadata contentMargin.step is "1"
+metadata contentMargin.default is "10"
+metadata contentMargin.label is "Content margin"
+
+/**
+Syntax: set the showShadow of <widget> to {true | false}
+Syntax: get the showShadow of <widget>
+
+Summary: Whether the popover has a drop shadow
+
+Description:
+When <showShadow> is true the popover is drawn 8 pixels inside the widget's
+rectangle on every side, to leave room for the shadow.
+**/
+property showShadow get mShowShadow set setShowShadow
+metadata showShadow.editor is "com.livecode.pi.boolean"
+metadata showShadow.default is "true"
+metadata showShadow.label is "Shadow"
+
+/**
+Syntax: set the fillColor of <widget> to <pColor>
+Syntax: get the fillColor of <widget>
+
+Summary: The colour of the popover's body
+
+Parameters:
+pColor (string): "red,green,blue" or "red,green,blue,alpha", each 0 to 255.
+
+Related: lineColor (property), fontColor (property)
+**/
+property fillColor get getFillColor set setFillColor
+metadata fillColor.editor is "com.livecode.pi.colorwithalpha"
+metadata fillColor.default is "255,255,255,255"
+metadata fillColor.section is "Colors"
+metadata fillColor.label is "Fill color"
+
+/**
+Syntax: set the lineColor of <widget> to <pColor>
+Syntax: get the lineColor of <widget>
+
+Summary: The colour of the popover's outline
+
+Parameters:
+pColor (string): "red,green,blue" or "red,green,blue,alpha", each 0 to 255.
+
+Related: lineSize (property), fillColor (property)
+**/
+property lineColor get getLineColor set setLineColor
+metadata lineColor.editor is "com.livecode.pi.colorwithalpha"
+metadata lineColor.default is "170,170,170,255"
+metadata lineColor.section is "Colors"
+metadata lineColor.label is "Line color"
+
+/**
+Syntax: set the fontColor of <widget> to <pColor>
+Syntax: get the fontColor of <widget>
+
+Summary: The colour of the popover's text
+
+Parameters:
+pColor (string): "red,green,blue" or "red,green,blue,alpha", each 0 to 255.
+
+Description:
+The engine's own textColor (foregroundColor) property is not used: set
+<fontColor> instead.
+
+Related: text (property)
+**/
+property fontColor get getTextColor set setTextColor
+metadata fontColor.editor is "com.livecode.pi.colorwithalpha"
+metadata fontColor.default is "0,0,0,255"
+metadata fontColor.section is "Colors"
+metadata fontColor.label is "Text color"
+
+/**
+Syntax: get the contentRect of <widget>
+
+Summary: The area inside the popover that content can occupy
+
+Description:
+The <contentRect> is the rectangle of the popover's body, less the outline and
+the <contentMargin>, as "left,top,right,bottom" in card coordinates. Use it to
+place controls over the popover:
+
+    set the rect of field "Details" to the contentRect of widget "Popover"
+
+The property is read-only.
+
+Related: contentMargin (property)
+**/
+property contentRect get getContentRect
+metadata contentRect.user_visible is "false"
+
+--------------------------------------------------------------------------------
+-- State
+--------------------------------------------------------------------------------
+
+-- The contents as they were set, in the layout of a field's styledText...
+private variable mStyledText as Array
+-- ...and parsed for drawing: a list of paragraphs, each an array with "align"
+-- and "runs", a list of arrays (see parsedRun).
+private variable mParagraphs as List
+private variable mTextAlign as String
+private variable mTextVAlign as String
+private variable mArrowSide as String
+private variable mArrowPosition as Number
+private variable mArrowSize as Number
+private variable mCornerRadius as Number
+private variable mLineSize as Number
+private variable mMargin as Number
+private variable mShowShadow as Boolean
+private variable mFillColor as Color
+private variable mLineColor as Color
+private variable mTextColor as Color
+
+constant kShadowMargin is 8
+
+private handler setDefaults() returns nothing
+	put the empty array into mStyledText
+	put [] into mParagraphs
+	put "center" into mTextAlign
+	put "center" into mTextVAlign
+	put "bottom" into mArrowSide
+	put 50 into mArrowPosition
+	put 12 into mArrowSize
+	put 10 into mCornerRadius
+	put 1 into mLineSize
+	put 10 into mMargin
+	put true into mShowShadow
+	put color [1, 1, 1, 1] into mFillColor
+	put color [170/255, 170/255, 170/255, 1] into mLineColor
+	put color [0, 0, 0, 1] into mTextColor
+end handler
+
+public handler OnCreate() returns nothing
+	setDefaults()
+end handler
+
+public handler OnSave(out rProperties as Array)
+	put the empty array into rProperties
+	put mStyledText into rProperties["styledText"]
+	put mTextAlign into rProperties["textAlign"]
+	put mTextVAlign into rProperties["textVerticalAlign"]
+	put mArrowSide into rProperties["arrowSide"]
+	put mArrowPosition into rProperties["arrowPosition"]
+	put mArrowSize into rProperties["arrowSize"]
+	put mCornerRadius into rProperties["cornerRadius"]
+	put mLineSize into rProperties["lineSize"]
+	put mMargin into rProperties["contentMargin"]
+	put mShowShadow into rProperties["showShadow"]
+	put colorString(mFillColor) into rProperties["fillColor"]
+	put colorString(mLineColor) into rProperties["lineColor"]
+	put colorString(mTextColor) into rProperties["fontColor"]
+end handler
+
+public handler OnLoad(in pProperties as Array)
+	setDefaults()
+	if "styledText" is among the keys of pProperties then
+		put asArray(pProperties["styledText"]) into mStyledText
+		put parsedParagraphs(mStyledText) into mParagraphs
+	end if
+	if "textAlign" is among the keys of pProperties then
+		put pProperties["textAlign"] into mTextAlign
+	end if
+	if "textVerticalAlign" is among the keys of pProperties then
+		put pProperties["textVerticalAlign"] into mTextVAlign
+	end if
+	if "arrowSide" is among the keys of pProperties then
+		put pProperties["arrowSide"] into mArrowSide
+	end if
+	if "arrowPosition" is among the keys of pProperties then
+		put pProperties["arrowPosition"] into mArrowPosition
+	end if
+	if "arrowSize" is among the keys of pProperties then
+		put pProperties["arrowSize"] into mArrowSize
+	end if
+	if "cornerRadius" is among the keys of pProperties then
+		put pProperties["cornerRadius"] into mCornerRadius
+	end if
+	if "lineSize" is among the keys of pProperties then
+		put pProperties["lineSize"] into mLineSize
+	end if
+	if "contentMargin" is among the keys of pProperties then
+		put pProperties["contentMargin"] into mMargin
+	end if
+	if "showShadow" is among the keys of pProperties then
+		put pProperties["showShadow"] into mShowShadow
+	end if
+	if "fillColor" is among the keys of pProperties then
+		put loadedColor(pProperties["fillColor"], mFillColor) into mFillColor
+	end if
+	if "lineColor" is among the keys of pProperties then
+		put loadedColor(pProperties["lineColor"], mLineColor) into mLineColor
+	end if
+	if "fontColor" is among the keys of pProperties then
+		put loadedColor(pProperties["fontColor"], mTextColor) into mTextColor
+	end if
+end handler
+
+public handler OnGeometryChanged() returns nothing
+	redraw all
+end handler
+
+--------------------------------------------------------------------------------
+-- Painting
+--------------------------------------------------------------------------------
+
+public handler OnPaint() returns nothing
+	variable tBody as Rectangle
+	put bodyRect() into tBody
+
+	variable tPath as Path
+	put bubblePath(tBody) into tPath
+
+	if mShowShadow then
+		begin layer with shadowEffect() on this canvas
+	end if
+	set the paint of this canvas to solid paint with mFillColor
+	fill tPath on this canvas
+	if mShowShadow then
+		end layer on this canvas
+	end if
+
+	if mLineSize > 0 then
+		set the stroke width of this canvas to mLineSize
+		set the paint of this canvas to solid paint with mLineColor
+		stroke tPath on this canvas
+	end if
+
+	if the number of elements in mParagraphs > 0 then
+		drawText(insetRect(tBody, mLineSize / 2 + mMargin))
+	end if
+end handler
+
+private handler shadowEffect() returns Effect
+	variable tProps as Array
+	put the empty array into tProps
+	put color [0, 0, 0, 0.3] into tProps["color"]
+	put "source over" into tProps["blend mode"]
+	put 0 into tProps["spread"]
+	put 6 into tProps["size"]
+	put 2 into tProps["distance"]
+	put 90 into tProps["angle"]
+	return outer shadow effect with properties tProps
+end handler
+
+-- The rectangle of the popover's body in widget coordinates: the widget's
+-- bounds less room for the outline, the shadow and the arrow.
+private handler bodyRect() returns Rectangle
+	variable tPad as Number
+	put mLineSize / 2 into tPad
+	if mShowShadow then
+		add kShadowMargin to tPad
+	end if
+
+	variable tLeft as Number
+	variable tTop as Number
+	variable tRight as Number
+	variable tBottom as Number
+	put tPad into tLeft
+	put tPad into tTop
+	put my width - tPad into tRight
+	put my height - tPad into tBottom
+
+	if mArrowSide is "left" then
+		add mArrowSize to tLeft
+	else if mArrowSide is "top" then
+		add mArrowSize to tTop
+	else if mArrowSide is "right" then
+		subtract mArrowSize from tRight
+	else if mArrowSide is "bottom" then
+		subtract mArrowSize from tBottom
+	end if
+
+	if tRight < tLeft then
+		put tLeft into tRight
+	end if
+	if tBottom < tTop then
+		put tTop into tBottom
+	end if
+	return rectangle [tLeft, tTop, tRight, tBottom]
+end handler
+
+private handler insetRect(in pRect as Rectangle, in pInset as Number) returns Rectangle
+	variable tLeft as Number
+	variable tTop as Number
+	variable tRight as Number
+	variable tBottom as Number
+	put the left of pRect + pInset into tLeft
+	put the top of pRect + pInset into tTop
+	put the right of pRect - pInset into tRight
+	put the bottom of pRect - pInset into tBottom
+	if tRight < tLeft then
+		put tLeft into tRight
+	end if
+	if tBottom < tTop then
+		put tTop into tBottom
+	end if
+	return rectangle [tLeft, tTop, tRight, tBottom]
+end handler
+
+-- The outline of the popover, drawn clockwise from the top left corner.
+private handler bubblePath(in pBody as Rectangle) returns Path
+	variable tL as Number
+	variable tT as Number
+	variable tR as Number
+	variable tB as Number
+	put the left of pBody into tL
+	put the top of pBody into tT
+	put the right of pBody into tR
+	put the bottom of pBody into tB
+
+	variable tRadius as Number
+	put minOf(mCornerRadius, minOf((tR - tL) / 2, (tB - tT) / 2)) into tRadius
+
+	-- The arrow: tHalf is half of its base, tCentre where it sits on its side.
+	variable tSideLength as Number
+	variable tSideStart as Number
+	if mArrowSide is "top" or mArrowSide is "bottom" then
+		put tR - tL - 2 * tRadius into tSideLength
+		put tL + tRadius into tSideStart
+	else
+		put tB - tT - 2 * tRadius into tSideLength
+		put tT + tRadius into tSideStart
+	end if
+	variable tHalf as Number
+	put minOf(mArrowSize, tSideLength / 2) into tHalf
+	variable tCentre as Number
+	put tSideStart + tHalf + (tSideLength - 2 * tHalf) * mArrowPosition / 100 into tCentre
+	variable tHasArrow as Boolean
+	put mArrowSide is not "none" and mArrowSize > 0 and tHalf > 0 into tHasArrow
+
+	variable tPath as Path
+	put the empty path into tPath
+	move to point [tL + tRadius, tT] on tPath
+
+	if tHasArrow and mArrowSide is "top" then
+		line to point [tCentre - tHalf, tT] on tPath
+		line to point [tCentre, tT - mArrowSize] on tPath
+		line to point [tCentre + tHalf, tT] on tPath
+	end if
+	line to point [tR - tRadius, tT] on tPath
+	if tRadius > 0 then
+		arc through point [tR, tT] to point [tR, tT + tRadius] with radius tRadius on tPath
+	end if
+
+	if tHasArrow and mArrowSide is "right" then
+		line to point [tR, tCentre - tHalf] on tPath
+		line to point [tR + mArrowSize, tCentre] on tPath
+		line to point [tR, tCentre + tHalf] on tPath
+	end if
+	line to point [tR, tB - tRadius] on tPath
+	if tRadius > 0 then
+		arc through point [tR, tB] to point [tR - tRadius, tB] with radius tRadius on tPath
+	end if
+
+	if tHasArrow and mArrowSide is "bottom" then
+		line to point [tCentre + tHalf, tB] on tPath
+		line to point [tCentre, tB + mArrowSize] on tPath
+		line to point [tCentre - tHalf, tB] on tPath
+	end if
+	line to point [tL + tRadius, tB] on tPath
+	if tRadius > 0 then
+		arc through point [tL, tB] to point [tL, tB - tRadius] with radius tRadius on tPath
+	end if
+
+	if tHasArrow and mArrowSide is "left" then
+		line to point [tL, tCentre + tHalf] on tPath
+		line to point [tL - mArrowSize, tCentre] on tPath
+		line to point [tL, tCentre - tHalf] on tPath
+	end if
+	line to point [tL, tT + tRadius] on tPath
+	if tRadius > 0 then
+		arc through point [tL, tT] to point [tL + tRadius, tT] with radius tRadius on tPath
+	end if
+
+	close path on tPath
+	return tPath
+end handler
+
+-- Draws the styled text in pRect: lays it out in lines, then draws each
+-- line's fragments one after another.
+private handler drawText(in pRect as Rectangle) returns nothing
+	if the width of pRect < 1 or the height of pRect < 1 then
+		return
+	end if
+
+	variable tLines as List
+	put layoutLines(the width of pRect) into tLines
+
+	variable tTextHeight as Number
+	put 0 into tTextHeight
+	variable tLine as Array
+	repeat for each element tLine in tLines
+		variable tLineHeight as Number
+		put tLine["height"] into tLineHeight
+		add tLineHeight to tTextHeight
+	end repeat
+
+	variable tY as Number
+	put the top of pRect into tY
+	if tTextHeight < the height of pRect then
+		if mTextVAlign is "center" then
+			add (the height of pRect - tTextHeight) / 2 to tY
+		else if mTextVAlign is "bottom" then
+			add the height of pRect - tTextHeight to tY
+		end if
+	end if
+
+	save state of this canvas
+	clip to pRect on this canvas
+
+	repeat for each element tLine in tLines
+		variable tAlign as String
+		put tLine["align"] into tAlign
+		if tAlign is "" then
+			put mTextAlign into tAlign
+		end if
+
+		variable tLineWidth as Number
+		put tLine["width"] into tLineWidth
+		variable tX as Number
+		put the left of pRect into tX
+		if tAlign is "center" then
+			add (the width of pRect - tLineWidth) / 2 to tX
+		else if tAlign is "right" then
+			add the width of pRect - tLineWidth to tX
+		end if
+
+		variable tAscent as Number
+		put tLine["ascent"] into tAscent
+		variable tHeight as Number
+		put tLine["height"] into tHeight
+
+		variable tFragments as List
+		put tLine["fragments"] into tFragments
+		variable tCount as Number
+		put the number of elements in tFragments into tCount
+		variable tIndex as Number
+		put 0 into tIndex
+		variable tFragment as Array
+		repeat for each element tFragment in tFragments
+			add 1 to tIndex
+			variable tWord as String
+			put tFragment["text"] into tWord
+			variable tWidth as Number
+			put tFragment["width"] into tWidth
+			variable tSpace as Number
+			put tFragment["space"] into tSpace
+			variable tRun as Array
+			put tFragment["run"] into tRun
+			variable tFont as Font
+			put tFragment["font"] into tFont
+
+			-- Decorations run under the space after a word too, except at
+			-- the end of a line.
+			variable tSpan as Number
+			put tWidth into tSpan
+			if tIndex < tCount then
+				add tSpace to tSpan
+			end if
+
+			variable tBackground as optional Color
+			put colorFromString(stringOf(tRun, "background")) into tBackground
+			if tBackground is not nothing then
+				set the paint of this canvas to solid paint with tBackground
+				fill rectangle path of rectangle [tX, tY, tX + tSpan, tY + tHeight] on this canvas
+			end if
+
+			variable tColor as optional Color
+			put colorFromString(stringOf(tRun, "color")) into tColor
+			if tColor is nothing then
+				put mTextColor into tColor
+			end if
+			set the paint of this canvas to solid paint with tColor
+
+			if tWord is not "" then
+				set the font of this canvas to tFont
+				fill text tWord at point [tX, tY + tAscent] on this canvas
+			end if
+
+			variable tThickness as Number
+			put maxOf(1, the size of tFont / 14) into tThickness
+			variable tUnderline as Boolean
+			put tRun["underline"] into tUnderline
+			if tUnderline then
+				fill rectangle path of rectangle [tX, tY + tAscent + 1, tX + tSpan, tY + tAscent + 1 + tThickness] on this canvas
+			end if
+			variable tStrike as Boolean
+			put tRun["strikeout"] into tStrike
+			if tStrike then
+				variable tStrikeY as Number
+				put tY + tAscent - the size of tFont * 0.3 into tStrikeY
+				fill rectangle path of rectangle [tX, tStrikeY, tX + tSpan, tStrikeY + tThickness] on this canvas
+			end if
+
+			add tWidth + tSpace to tX
+		end repeat
+
+		add tHeight to tY
+	end repeat
+
+	restore state of this canvas
+end handler
+
+-- Breaks the paragraphs into lines no wider than pWidth. Each line is an
+-- array: "fragments" (a list of words, each with its font, run, width and
+-- the width of the space after it), "width" (without a trailing space),
+-- "ascent", "height" and "align". A word wider than pWidth stays on a line
+-- of its own.
+private handler layoutLines(in pWidth as Number) returns List
+	variable tLines as List
+	put [] into tLines
+
+	variable tBase as Font
+	put my font into tBase
+	variable tBaseMetrics as Rectangle
+	put the layout bounds of text "Mg" with tBase into tBaseMetrics
+
+	variable tParagraph as Array
+	repeat for each element tParagraph in mParagraphs
+		variable tAlign as String
+		put tParagraph["align"] into tAlign
+
+		variable tFragments as List
+		put [] into tFragments
+		variable tLineWidth as Number
+		put 0 into tLineWidth
+		variable tLastSpace as Number
+		put 0 into tLastSpace
+		variable tAscent as Number
+		put 0 into tAscent
+		variable tDescent as Number
+		put 0 into tDescent
+		-- A line may only be broken after a space.
+		variable tCanBreak as Boolean
+		put false into tCanBreak
+
+		variable tRuns as List
+		put tParagraph["runs"] into tRuns
+		variable tRun as Array
+		repeat for each element tRun in tRuns
+			variable tFont as Font
+			put runFont(tRun, tBase) into tFont
+			-- Layout bounds are measured from the baseline, so the top is
+			-- negative.
+			variable tMetrics as Rectangle
+			put the layout bounds of text "Mg" with tFont into tMetrics
+			-- Measured as a difference, in case a trailing space on its own
+			-- is not counted.
+			variable tSpaceWidth as Number
+			put textWidth("a a", tFont) - textWidth("aa", tFont) into tSpaceWidth
+
+			variable tRunText as String
+			put tRun["text"] into tRunText
+			-- "split" drops a trailing empty element, which would lose the
+			-- space at the end of a run, so split with a sentinel on the end
+			-- and take it off the last word.
+			variable tWords as List
+			split tRunText & "|" by " " into tWords
+			variable tWordCount as Number
+			put the number of elements in tWords into tWordCount
+			variable tLastWord as String
+			put tWords[tWordCount] into tLastWord
+			delete the last char of tLastWord
+			put tLastWord into tWords[tWordCount]
+			variable tWordIndex as Number
+			put 0 into tWordIndex
+			variable tWord as String
+			repeat for each element tWord in tWords
+				add 1 to tWordIndex
+				variable tSpace as Number
+				put 0 into tSpace
+				if tWordIndex < tWordCount then
+					put tSpaceWidth into tSpace
+				end if
+				if tWord is "" and tSpace is 0 then
+					next repeat
+				end if
+
+				variable tWidth as Number
+				put textWidth(tWord, tFont) into tWidth
+
+				if tCanBreak and tLineWidth > 0 and tLineWidth + tWidth > pWidth then
+					push lineArray(tFragments, tLineWidth - tLastSpace, tAscent, tDescent, tAlign, tBaseMetrics) onto tLines
+					put [] into tFragments
+					put 0 into tLineWidth
+					put 0 into tAscent
+					put 0 into tDescent
+				end if
+
+				variable tFragment as Array
+				put the empty array into tFragment
+				put tWord into tFragment["text"]
+				put tWidth into tFragment["width"]
+				put tSpace into tFragment["space"]
+				put tFont into tFragment["font"]
+				put tRun into tFragment["run"]
+				push tFragment onto tFragments
+
+				add tWidth + tSpace to tLineWidth
+				put tSpace into tLastSpace
+				put maxOf(tAscent, 0 - the top of tMetrics) into tAscent
+				put maxOf(tDescent, the bottom of tMetrics) into tDescent
+				put tSpace > 0 into tCanBreak
+			end repeat
+		end repeat
+
+		push lineArray(tFragments, tLineWidth - tLastSpace, tAscent, tDescent, tAlign, tBaseMetrics) onto tLines
+	end repeat
+	return tLines
+end handler
+
+-- A line with no text takes its height from the widget's own font.
+private handler lineArray(in pFragments as List, in pWidth as Number, in pAscent as Number, in pDescent as Number, in pAlign as String, in pBaseMetrics as Rectangle) returns Array
+	variable tLine as Array
+	put the empty array into tLine
+	put pFragments into tLine["fragments"]
+	put pAlign into tLine["align"]
+	if the number of elements in pFragments is 0 then
+		put 0 into tLine["width"]
+		put 0 - the top of pBaseMetrics into tLine["ascent"]
+		put the height of pBaseMetrics into tLine["height"]
+	else
+		put maxOf(0, pWidth) into tLine["width"]
+		put pAscent into tLine["ascent"]
+		put pAscent + pDescent into tLine["height"]
+	end if
+	return tLine
+end handler
+
+-- The font a run is drawn with: the widget's font, changed by whatever the
+-- run sets for itself.
+private handler runFont(in pRun as Array, in pBase as Font) returns Font
+	variable tName as String
+	put pRun["font"] into tName
+	if tName is "" then
+		put the name of pBase into tName
+	end if
+	variable tSize as Number
+	put pRun["size"] into tSize
+	if tSize < 1 then
+		put the size of pBase into tSize
+	end if
+
+	variable tBold as Boolean
+	variable tItalic as Boolean
+	variable tHasStyle as Boolean
+	put pRun["hasStyle"] into tHasStyle
+	if tHasStyle then
+		put pRun["bold"] into tBold
+		put pRun["italic"] into tItalic
+	else
+		put the bold of pBase into tBold
+		put the italic of pBase into tItalic
+	end if
+
+	variable tFont as Font
+	put font tName at size the floor of (tSize + 0.5) into tFont
+	set the bold of tFont to tBold
+	set the italic of tFont to tItalic
+	return tFont
+end handler
+
+private handler textWidth(in pText as String, in pFont as Font) returns Number
+	if pText is "" then
+		return 0
+	end if
+	return the width of (the layout bounds of text pText with pFont)
+end handler
+
+--------------------------------------------------------------------------------
+-- Styled text
+--------------------------------------------------------------------------------
+
+-- Turns a field-style styledText array into the list of paragraphs the
+-- drawing code uses.
+private handler parsedParagraphs(in pStyled as Array) returns List
+	variable tParagraphs as List
+	put [] into tParagraphs
+
+	variable tSource as optional any
+	repeat for each element tSource in orderedElements(pStyled)
+		variable tSourceArray as Array
+		put asArray(tSource) into tSourceArray
+
+		variable tAlign as String
+		put "" into tAlign
+		if "style" is among the keys of tSourceArray then
+			put the lower of stringOf(asArray(tSourceArray["style"]), "textAlign") into tAlign
+		end if
+		if not (tAlign is in ["left", "center", "right"]) then
+			put "" into tAlign
+		end if
+
+		variable tRuns as List
+		put [] into tRuns
+		if "runs" is among the keys of tSourceArray then
+			variable tRunSource as optional any
+			repeat for each element tRunSource in orderedElements(tSourceArray["runs"])
+				push parsedRun(asArray(tRunSource)) onto tRuns
+			end repeat
+		end if
+
+		variable tParagraph as Array
+		put the empty array into tParagraph
+		put tAlign into tParagraph["align"]
+		put tRuns into tParagraph["runs"]
+		push tParagraph onto tParagraphs
+	end repeat
+	return tParagraphs
+end handler
+
+-- One run of text: "text", "font" (empty to inherit), "size" (0 to inherit),
+-- "hasStyle" with "bold" and "italic" (inherited when hasStyle is false),
+-- "underline", "strikeout", and "color" and "background" as colour strings
+-- (empty for none).
+private handler parsedRun(in pSource as Array) returns Array
+	variable tStyle as Array
+	put the empty array into tStyle
+	if "style" is among the keys of pSource then
+		put asArray(pSource["style"]) into tStyle
+	end if
+
+	variable tRun as Array
+	put the empty array into tRun
+	put stringOf(pSource, "text") into tRun["text"]
+	put stringOf(tStyle, "textFont") into tRun["font"]
+	put numberOf(tStyle, "textSize") into tRun["size"]
+	put stringOf(tStyle, "textColor") into tRun["color"]
+	put stringOf(tStyle, "backgroundColor") into tRun["background"]
+
+	variable tTextStyle as String
+	put the lower of stringOf(tStyle, "textStyle") into tTextStyle
+	put tTextStyle is not "" into tRun["hasStyle"]
+	put tTextStyle contains "bold" into tRun["bold"]
+	put tTextStyle contains "italic" into tRun["italic"]
+	put tTextStyle contains "underline" into tRun["underline"]
+	put tTextStyle contains "strikeout" into tRun["strikeout"]
+	return tRun
+end handler
+
+-- xTalk arrays with the keys 1..n may arrive as an array or as a list.
+private handler asArray(in pValue as optional any) returns Array
+	variable tArray as Array
+	put the empty array into tArray
+	if pValue is an array then
+		put pValue into tArray
+	else if pValue is a list then
+		variable tIndex as Number
+		put 0 into tIndex
+		variable tElement as optional any
+		variable tList as List
+		put pValue into tList
+		repeat for each element tElement in tList
+			add 1 to tIndex
+			put tElement into tArray[wholeString(tIndex)]
+		end repeat
+	end if
+	return tArray
+end handler
+
+-- The elements of a list, or of an array with the keys 1..n, in order.
+private handler orderedElements(in pValue as optional any) returns List
+	variable tElements as List
+	put [] into tElements
+	if pValue is a list then
+		put pValue into tElements
+	else if pValue is an array then
+		variable tArray as Array
+		put pValue into tArray
+		variable tIndex as Number
+		put 1 into tIndex
+		repeat while wholeString(tIndex) is among the keys of tArray
+			push tArray[wholeString(tIndex)] onto tElements
+			add 1 to tIndex
+		end repeat
+	end if
+	return tElements
+end handler
+
+private handler stringOf(in pArray as Array, in pKey as String) returns String
+	if not (pKey is among the keys of pArray) then
+		return ""
+	end if
+	variable tValue as optional any
+	put pArray[pKey] into tValue
+	if tValue is a string then
+		return tValue
+	end if
+	if tValue is a number then
+		variable tNumber as Number
+		put tValue into tNumber
+		return tNumber formatted as string
+	end if
+	return ""
+end handler
+
+private handler numberOf(in pArray as Array, in pKey as String) returns Number
+	if not (pKey is among the keys of pArray) then
+		return 0
+	end if
+	variable tValue as optional any
+	put pArray[pKey] into tValue
+	if tValue is a number then
+		return tValue
+	end if
+	if tValue is a string then
+		variable tParsed as optional Number
+		put tValue parsed as number into tParsed
+		if tParsed is not nothing then
+			return tParsed
+		end if
+	end if
+	return 0
+end handler
+
+--------------------------------------------------------------------------------
+-- Property handlers
+--------------------------------------------------------------------------------
+
+private handler getText() returns String
+	variable tText as String
+	put "" into tText
+	variable tFirst as Boolean
+	put true into tFirst
+	variable tParagraph as Array
+	repeat for each element tParagraph in mParagraphs
+		if not tFirst then
+			put "\n" after tText
+		end if
+		put false into tFirst
+		variable tRuns as List
+		put tParagraph["runs"] into tRuns
+		variable tRun as Array
+		repeat for each element tRun in tRuns
+			variable tRunText as String
+			put tRun["text"] into tRunText
+			put tRunText after tText
+		end repeat
+	end repeat
+	return tText
+end handler
+
+-- Plain text becomes one unstyled run per line.
+private handler setText(in pText as String) returns nothing
+	variable tStyled as Array
+	put the empty array into tStyled
+	if pText is not "" then
+		variable tLines as List
+		split pText by "\n" into tLines
+		variable tIndex as Number
+		put 0 into tIndex
+		variable tLine as String
+		repeat for each element tLine in tLines
+			add 1 to tIndex
+			variable tRun as Array
+			put the empty array into tRun
+			put tLine into tRun["text"]
+			variable tRuns as Array
+			put the empty array into tRuns
+			put tRun into tRuns["1"]
+			variable tParagraph as Array
+			put the empty array into tParagraph
+			put tRuns into tParagraph["runs"]
+			put tParagraph into tStyled[wholeString(tIndex)]
+		end repeat
+	end if
+	put tStyled into mStyledText
+	put parsedParagraphs(mStyledText) into mParagraphs
+	redraw all
+end handler
+
+private handler getStyledText() returns Array
+	return mStyledText
+end handler
+
+private handler setStyledText(in pStyled as optional any) returns nothing
+	put asArray(pStyled) into mStyledText
+	put parsedParagraphs(mStyledText) into mParagraphs
+	redraw all
+end handler
+
+private handler setTextAlign(in pAlign as String) returns nothing
+	variable tAlign as String
+	put the lower of pAlign into tAlign
+	if not (tAlign is in ["left", "center", "right"]) then
+		throw "textAlign must be left, center or right"
+	end if
+	put tAlign into mTextAlign
+	redraw all
+end handler
+
+private handler setTextVAlign(in pAlign as String) returns nothing
+	variable tAlign as String
+	put the lower of pAlign into tAlign
+	if not (tAlign is in ["top", "center", "bottom"]) then
+		throw "textVerticalAlign must be top, center or bottom"
+	end if
+	put tAlign into mTextVAlign
+	redraw all
+end handler
+
+private handler setArrowSide(in pSide as String) returns nothing
+	variable tSide as String
+	put the lower of pSide into tSide
+	if not (tSide is in ["left", "top", "right", "bottom", "none"]) then
+		throw "arrowSide must be left, top, right, bottom or none"
+	end if
+	put tSide into mArrowSide
+	redraw all
+end handler
+
+private handler setArrowPosition(in pPercent as Number) returns nothing
+	put maxOf(0, minOf(100, pPercent)) into mArrowPosition
+	redraw all
+end handler
+
+private handler setArrowSize(in pSize as Number) returns nothing
+	put maxOf(0, pSize) into mArrowSize
+	redraw all
+end handler
+
+private handler setCornerRadius(in pRadius as Number) returns nothing
+	put maxOf(0, pRadius) into mCornerRadius
+	redraw all
+end handler
+
+private handler setLineSize(in pSize as Number) returns nothing
+	put maxOf(0, pSize) into mLineSize
+	redraw all
+end handler
+
+private handler setMargin(in pMargin as Number) returns nothing
+	put maxOf(0, pMargin) into mMargin
+	redraw all
+end handler
+
+private handler setShowShadow(in pShow as Boolean) returns nothing
+	put pShow into mShowShadow
+	redraw all
+end handler
+
+private handler getFillColor() returns String
+	return colorString(mFillColor)
+end handler
+
+private handler setFillColor(in pColor as String) returns nothing
+	put parsedColor(pColor) into mFillColor
+	redraw all
+end handler
+
+private handler getLineColor() returns String
+	return colorString(mLineColor)
+end handler
+
+private handler setLineColor(in pColor as String) returns nothing
+	put parsedColor(pColor) into mLineColor
+	redraw all
+end handler
+
+private handler getTextColor() returns String
+	return colorString(mTextColor)
+end handler
+
+private handler setTextColor(in pColor as String) returns nothing
+	put parsedColor(pColor) into mTextColor
+	redraw all
+end handler
+
+private handler getContentRect() returns String
+	variable tRect as Rectangle
+	put insetRect(bodyRect(), mLineSize / 2 + mMargin) into tRect
+
+	variable tOffsetX as Number
+	variable tOffsetY as Number
+	put the left of my rectangle into tOffsetX
+	put the top of my rectangle into tOffsetY
+
+	return wholeString(the left of tRect + tOffsetX) & "," & \
+			wholeString(the top of tRect + tOffsetY) & "," & \
+			wholeString(the right of tRect + tOffsetX) & "," & \
+			wholeString(the bottom of tRect + tOffsetY)
+end handler
+
+--------------------------------------------------------------------------------
+-- Helpers
+--------------------------------------------------------------------------------
+
+private handler minOf(in pLeft as Number, in pRight as Number) returns Number
+	if pLeft < pRight then
+		return pLeft
+	end if
+	return pRight
+end handler
+
+private handler maxOf(in pLeft as Number, in pRight as Number) returns Number
+	if pLeft > pRight then
+		return pLeft
+	end if
+	return pRight
+end handler
+
+private handler wholeString(in pValue as Number) returns String
+	variable tWhole as Number
+	put the floor of (pValue + 0.5) into tWhole
+	variable tString as String
+	put tWhole formatted as string into tString
+	if "." is in tString then
+		variable tOffset as Number
+		put the first offset of "." in tString into tOffset
+		put char 1 to tOffset - 1 of tString into tString
+	end if
+	return tString
+end handler
+
+-- "r,g,b" or "r,g,b,a" with every item 0 to 255.
+private handler colorString(in pColor as Color) returns String
+	return wholeString(the red of pColor * 255) & "," & \
+			wholeString(the green of pColor * 255) & "," & \
+			wholeString(the blue of pColor * 255) & "," & \
+			wholeString(the alpha of pColor * 255)
+end handler
+
+-- Returns nothing if pString is not "r,g,b" or "r,g,b,a".
+private handler colorFromString(in pString as String) returns optional Color
+	variable tItems as List
+	split pString by "," into tItems
+
+	variable tCount as Number
+	put the number of elements in tItems into tCount
+	if tCount < 3 or tCount > 4 then
+		return nothing
+	end if
+
+	variable tChannels as List
+	put [] into tChannels
+	variable tItem as String
+	repeat for each element tItem in tItems
+		variable tValue as optional Number
+		put tItem parsed as number into tValue
+		if tValue is nothing then
+			return nothing
+		end if
+		push maxOf(0, minOf(255, tValue)) / 255 onto tChannels
+	end repeat
+	if tCount is 3 then
+		push 1 onto tChannels
+	end if
+	return color tChannels
+end handler
+
+private handler parsedColor(in pString as String) returns Color
+	variable tColor as optional Color
+	put colorFromString(pString) into tColor
+	if tColor is nothing then
+		throw "a color must be red,green,blue or red,green,blue,alpha, each 0 to 255"
+	end if
+	return tColor
+end handler
+
+private handler loadedColor(in pValue as any, in pFallback as Color) returns Color
+	if not (pValue is a string) then
+		return pFallback
+	end if
+	variable tColor as optional Color
+	put colorFromString(pValue) into tColor
+	if tColor is nothing then
+		return pFallback
+	end if
+	return tColor
+end handler
+
+end widget

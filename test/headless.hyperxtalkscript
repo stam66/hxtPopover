@@ -1,0 +1,208 @@
+script "HXTPopoverHeadless"
+-- Loads the built widget in a headless engine, checks its properties and
+-- exports a snapshot of five popovers.
+-- Run it with test/run.sh, which starts the engine twice: the first run
+-- builds and saves a test stack, the second (HXTPOPOVER_PHASE=reload) loads
+-- the saved stack in a fresh engine and checks the properties survived.
+-- Environment: HXTPOPOVER_ROOT (project folder), HXTPOPOVER_OUT (output folder)
+
+constant kWidgetKind = "com.hyperxtalk.widget.popover"
+
+local sFailures
+
+command logStep pMsg
+   local tFile
+   put $HXTPOPOVER_OUT & "/steps.log" into tFile
+   open file tFile for append
+   write pMsg & return to file tFile
+   close file tFile
+end logStep
+
+command check pName, pGot, pWant
+   if pGot is pWant then
+      logStep "ok  " && pName
+   else
+      add 1 to sFailures
+      logStep "FAIL" && pName & ": got [" & pGot & "] wanted [" & pWant & "]"
+   end if
+end check
+
+on startup
+   put 0 into sFailures
+   try
+      if $HXTPOPOVER_PHASE is "reload" then
+         runReload
+      else
+         runTests
+      end if
+   catch tError
+      add 1 to sFailures
+      logStep "FAIL script error:" && tError
+   end try
+   logStep "failures:" && sFailures
+   quit sFailures
+end startup
+
+command runTests
+   local tRoot, tOut, tPackage
+   put $HXTPOPOVER_ROOT into tRoot
+   put $HXTPOPOVER_OUT into tOut
+   put tRoot & "/build/pkg/" & kWidgetKind into tPackage
+   logStep "engine:" && the version && the platform
+
+   load extension from file (tPackage & "/module.lcm") with resource path tPackage
+   check "extension loaded", kWidgetKind is among the lines of the loadedExtensions, true
+
+   create invisible stack "PopoverTest"
+   set the rect of stack "PopoverTest" to 100,100,800,560
+   set the backgroundColor of stack "PopoverTest" to "235,238,242"
+   set the defaultStack to "PopoverTest"
+
+   -- defaults
+   create widget "P1" as kWidgetKind
+   set the rect of widget "P1" to 20,20,240,160
+   check "default arrowSide", the arrowSide of widget "P1", "bottom"
+   check "default arrowPosition", the arrowPosition of widget "P1", 50
+   check "default text", the text of widget "P1", empty
+   check "default fillColor", the fillColor of widget "P1", "255,255,255,255"
+   check "default lineColor", the lineColor of widget "P1", "170,170,170,255"
+   check "default showShadow", the showShadow of widget "P1", true
+   -- shadow 8 + line 1 + margin 10 = 19 in; arrow 12 at the bottom
+   check "default contentRect", the contentRect of widget "P1", "39,39,221,129"
+   set the text of widget "P1" to "A popover with its arrow at the bottom and text that wraps over several lines."
+
+   create widget "P2" as kWidgetKind
+   set the rect of widget "P2" to 260,20,480,160
+   set the arrowSide of widget "P2" to "Top"
+   set the arrowPosition of widget "P2" to 20
+   set the text of widget "P2" to "Top arrow at 20%" & return & "left aligned, top"
+   set the textAlign of widget "P2" to "left"
+   set the textVerticalAlign of widget "P2" to "top"
+   set the fillColor of widget "P2" to "255,248,220"
+   set the lineColor of widget "P2" to "200,160,60"
+   set the lineSize of widget "P2" to 2
+   check "arrowSide lowercased", the arrowSide of widget "P2", "top"
+   check "fillColor gets alpha", the fillColor of widget "P2", "255,248,220,255"
+   check "lineSize", the lineSize of widget "P2", 2
+
+   create widget "P3" as kWidgetKind
+   set the rect of widget "P3" to 20,180,240,320
+   set the arrowSide of widget "P3" to "left"
+   set the arrowPosition of widget "P3" to 100
+   set the arrowSize of widget "P3" to 20
+   set the cornerRadius of widget "P3" to 0
+   set the showShadow of widget "P3" to false
+   set the fillColor of widget "P3" to "40,44,52,255"
+   set the lineColor of widget "P3" to "90,96,110"
+   set the fontColor of widget "P3" to "240,240,240"
+   set the text of widget "P3" to "Left arrow at 100%, square corners, no shadow"
+   set the textAlign of widget "P3" to "right"
+   set the textVerticalAlign of widget "P3" to "bottom"
+   -- no shadow: line 1 + margin 10 = 11 in; arrow 20 on the left
+   check "contentRect left arrow", the contentRect of widget "P3", "51,191,229,309"
+
+   create widget "P4" as kWidgetKind
+   set the rect of widget "P4" to 260,180,480,320
+   set the arrowSide of widget "P4" to "right"
+   set the arrowPosition of widget "P4" to 0
+   set the cornerRadius of widget "P4" to 30
+   set the fillColor of widget "P4" to "0,122,255,200"
+   set the lineSize of widget "P4" to 0
+   set the fontColor of widget "P4" to "255,255,255"
+   set the textSize of widget "P4" to 16
+   set the textStyle of widget "P4" to "bold"
+   set the text of widget "P4" to "Right arrow, 16pt bold, translucent"
+   check "fillColor with alpha", the fillColor of widget "P4", "0,122,255,200"
+
+   -- backdrop use: no text, a field placed in the contentRect
+   create widget "P5" as kWidgetKind
+   set the rect of widget "P5" to 500,20,680,320
+   set the arrowSide of widget "P5" to "none"
+   create field "Content"
+   set the rect of field "Content" to the contentRect of widget "P5"
+   set the text of field "Content" to "A field placed in the contentRect of a popover with no text and no arrow."
+   check "contentRect no arrow", the contentRect of widget "P5", "519,39,661,301"
+
+   -- styled text, copied from a field
+   create field "Source"
+   set the rect of field "Source" to 700,20,900,200
+   set the htmlText of field "Source" to "<p>Plain <b>bold</b> <i>italic</i> <u>underlined</u> <strike>struck</strike> " & \
+         "<font color=" & quote & "#C00000" & quote & ">red</font> <font size=" & quote & "20" & quote & ">big</font> " & \
+         "<font bgcolor=" & quote & "#FFE680" & quote & ">highlighted words</font> and enough plain text to wrap onto another line.</p>" & \
+         "<p></p><p align=" & quote & "right" & quote & ">A right-aligned <b><i>bold italic</i></b> paragraph</p>"
+   create widget "P6" as kWidgetKind
+   set the rect of widget "P6" to 20,330,480,455
+   set the arrowSide of widget "P6" to "top"
+   set the textAlign of widget "P6" to "left"
+   set the textVerticalAlign of widget "P6" to "top"
+   set the styledText of widget "P6" to the styledText of field "Source"
+   local tStyled
+   put the styledText of widget "P6" into tStyled
+   check "styled paragraphs", the number of elements of tStyled, 3
+   check "styled run style", tStyled[1]["runs"][2]["style"]["textStyle"], "bold"
+   check "styled run text", tStyled[1]["runs"][2]["text"], "bold"
+   check "styled paragraph align", tStyled[3]["style"]["textAlign"], "right"
+   check "styled plain text", the text of widget "P6", the text of field "Source"
+   put the styledText of widget "P1" into tStyled
+   check "text from plain", tStyled[1]["runs"][1]["text"] begins with "A popover", true
+   check "plain text round trip", the text of widget "P2", "Top arrow at 20%" & return & "left aligned, top"
+   set the styledText of widget "P5" to empty
+   check "empty styledText", the text of widget "P5", empty
+   delete field "Source"
+
+   -- clamping and bad values
+   set the arrowPosition of widget "P1" to 250
+   check "arrowPosition clamped", the arrowPosition of widget "P1", 100
+   set the arrowPosition of widget "P1" to 50
+   local tThrew
+   put false into tThrew
+   try
+      set the arrowSide of widget "P1" to "sideways"
+   catch tErr
+      put true into tThrew
+   end try
+   check "bad arrowSide throws", tThrew, true
+   put false into tThrew
+   try
+      set the fillColor of widget "P1" to "red"
+   catch tErr
+      put true into tThrew
+   end try
+   check "bad colour throws", tThrew, true
+   check "arrowSide unchanged", the arrowSide of widget "P1", "bottom"
+
+   export snapshot from card 1 of stack "PopoverTest" to file (tOut & "/popovers.png") as PNG
+   logStep "snapshot written"
+
+   -- save, close, reopen: properties must survive
+   local tFile
+   put tOut & "/PopoverTest.hyperxtalk" into tFile
+   save stack "PopoverTest" as tFile
+   logStep "stack saved"
+end runTests
+
+command runReload
+   local tPackage, tFile
+   put $HXTPOPOVER_ROOT & "/build/pkg/" & kWidgetKind into tPackage
+   put $HXTPOPOVER_OUT & "/PopoverTest.hyperxtalk" into tFile
+   load extension from file (tPackage & "/module.lcm") with resource path tPackage
+   lock messages
+   go invisible stack tFile
+   unlock messages
+   set the defaultStack to "PopoverTest"
+   check "reload text", the text of widget "P3", "Left arrow at 100%, square corners, no shadow"
+   check "reload arrowSide", the arrowSide of widget "P3", "left"
+   check "reload arrowSize", the arrowSize of widget "P3", 20
+   check "reload cornerRadius", the cornerRadius of widget "P3", 0
+   check "reload showShadow", the showShadow of widget "P3", false
+   check "reload fillColor", the fillColor of widget "P4", "0,122,255,200"
+   check "reload fontColor", the fontColor of widget "P4", "255,255,255,255"
+   check "reload textAlign", the textAlign of widget "P3", "right"
+   check "reload two-line text", the number of lines of the text of widget "P2", 2
+   check "reload styled text", word 1 to 3 of the text of widget "P6", "Plain bold italic"
+   local tStyled
+   put the styledText of widget "P6" into tStyled
+   check "reload styled run", tStyled[3]["runs"][2]["style"]["textStyle"], "bold,italic"
+   export snapshot from card 1 of stack "PopoverTest" to file ($HXTPOPOVER_OUT & "/popovers-reloaded.png") as PNG
+   logStep "reloaded snapshot written"
+end runReload
