@@ -150,6 +150,22 @@ command runTests
    check "empty styledText", the text of widget "P5", empty
    delete field "Source"
 
+   -- dark mode: default colours follow the appearance, set ones do not
+   check "default hxtAppearance", the hxtAppearance of widget "P1", "light"
+   check "default followAppearance", the followAppearance of widget "P1", true
+   repeat with i = 1 to 6
+      set the hxtAppearance of widget ("P" & i) to "dark"
+   end repeat
+   set the followAppearance of widget "P6" to false
+   check "hxtAppearance set", the hxtAppearance of widget "P1", "dark"
+   check "fillColor still reports default", the fillColor of widget "P1", "255,255,255,255"
+   set the backgroundColor of stack "PopoverTest" to "30,30,32"
+   export snapshot from card 1 of stack "PopoverTest" to file (tOut & "/popovers-dark.png") as PNG
+   set the backgroundColor of stack "PopoverTest" to "235,238,242"
+   repeat with i = 1 to 6
+      set the hxtAppearance of widget ("P" & i) to "light"
+   end repeat
+
    -- clamping and bad values
    set the arrowPosition of widget "P1" to 250
    check "arrowPosition clamped", the arrowPosition of widget "P1", 100
@@ -198,6 +214,8 @@ command runReload
    check "reload fillColor", the fillColor of widget "P4", "0,122,255,200"
    check "reload fontColor", the fontColor of widget "P4", "255,255,255,255"
    check "reload textAlign", the textAlign of widget "P3", "right"
+   check "reload followAppearance", the followAppearance of widget "P6", false
+   check "reload hxtAppearance not saved", the hxtAppearance of widget "P1", "light"
    check "reload two-line text", the number of lines of the text of widget "P2", 2
    check "reload styled text", word 1 to 3 of the text of widget "P6", "Plain bold italic"
    local tStyled

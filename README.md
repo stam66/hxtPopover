@@ -8,7 +8,7 @@ It is the successor to [skPopover](https://github.com/stam66/skPopover), which d
 
 ## Using it
 
-Build the extension (see below), install `build/com.hyperxtalk.widget.popover.lce` with the Extension Manager, then drag a Popover from the Tools palette.
+Download `com.hyperxtalk.widget.popover.lce` from the [latest release](https://github.com/stam66/hxtPopover/releases/latest) (or build it, see below), install it with the Extension Manager, then drag a Popover from the Tools palette.
 
 A popover can be used in two ways:
 
@@ -37,6 +37,8 @@ A widget only sees clicks inside its own rectangle, so dismissing a popover when
 | `contentMargin` | pixels between the outline and the content | 10 |
 | `showShadow` | `true`, `false` | `true` |
 | `fillColor`, `lineColor`, `fontColor` | `r,g,b` or `r,g,b,a`, each 0 to 255 | white, grey, black |
+| `followAppearance` | `true`, `false`: whether default colours follow dark mode | `true` |
+| `hxtAppearance` | `light`, `dark`; not saved, see Dark mode | `light` |
 | `contentRect` | read-only, `left,top,right,bottom` in card coordinates | |
 
 Notes:
@@ -54,6 +56,35 @@ set the styledText of widget "Popover" to the styledText of field "Source"
 ```
 
 The widget draws the font, size, colour, background colour, bold, italic, underline and strikeout of each run, and the alignment of each paragraph. Links, lists, indents, tabs, images and superscript or subscript are kept in the array but not drawn. Text is wrapped to the content area and clipped if it does not fit.
+
+## Dark mode
+
+![The same popovers in a dark appearance](docs/popovers-dark.png)
+
+A popover whose colours are still at their defaults is drawn with dark defaults when its `hxtAppearance` is `dark`. Colours you have set are drawn as set, and default text only turns light while the fill is at its default too. The colour properties keep reporting the values that were set, whatever the appearance. Set `followAppearance` to false to keep the light defaults.
+
+A widget cannot read the system appearance itself, and `hxtAppearance` is not saved with the stack, so the stack has to tell its popovers, when it opens and when the appearance changes:
+
+```
+on preOpenStack
+   updatePopovers the systemAppearance
+end preOpenStack
+
+on systemAppearanceChanged pMode
+   updatePopovers pMode
+   pass systemAppearanceChanged
+end systemAppearanceChanged
+
+command updatePopovers pMode
+   repeat with i = 1 to the number of widgets of this card
+      if the kind of widget i is "com.hyperxtalk.widget.popover" then
+         set the hxtAppearance of widget i to pMode
+      end if
+   end repeat
+end updatePopovers
+```
+
+This is the same `hxtAppearance` property the widgets bundled with HyperXTalk use. The IDE sets it for those widgets automatically; at the time of writing it does not do so for widgets installed as extensions, so while editing in the IDE a popover stays light unless your stack's own handlers set it.
 
 ## Building
 
@@ -76,7 +107,7 @@ runs the widget in a headless engine, checks its properties, saves and reloads a
 ## Limitations
 
 - Developed and tested on macOS only.
-- The default colours are fixed and do not follow dark mode.
+- In the IDE, popovers do not switch to dark mode on their own (see Dark mode).
 
 ## Licence
 

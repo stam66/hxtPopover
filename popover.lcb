@@ -15,7 +15,7 @@ use com.livecode.engine
 
 metadata title is "Popover"
 metadata author is "Stam Kapetanakis"
-metadata version is "0.1.0"
+metadata version is "0.2.0"
 metadata preferredSize is "240,140"
 metadata svgicon is "M4,2h56a4,4,0,0,1,4,4v32a4,4,0,0,1,-4,4H38l-6,10l-6,-10H4a4,4,0,0,1,-4,-4V6a4,4,0,0,1,4,-4z"
 
@@ -318,6 +318,55 @@ metadata fontColor.section is "Colors"
 metadata fontColor.label is "Text color"
 
 /**
+Syntax: set the followAppearance of <widget> to {true | false}
+Syntax: get the followAppearance of <widget>
+
+Summary: Whether the popover's default colours follow dark mode
+
+Description:
+When <followAppearance> is true and the <hxtAppearance> is "dark", a
+<fillColor>, <lineColor> or <fontColor> that is still at its default is drawn
+with a dark-mode default instead. A colour that has been changed is always
+drawn as set, and the <fontColor> only changes while the <fillColor> is at
+its default too, so that default text on a fill you chose stays readable. Set <followAppearance> to false to keep the light defaults in
+dark mode.
+
+Related: hxtAppearance (property)
+**/
+property followAppearance get mFollowAppearance set setFollowAppearance
+metadata followAppearance.editor is "com.livecode.pi.boolean"
+metadata followAppearance.default is "true"
+metadata followAppearance.section is "Colors"
+metadata followAppearance.label is "Follow dark mode"
+
+/**
+Syntax: set the hxtAppearance of <widget> to <pMode>
+Syntax: get the hxtAppearance of <widget>
+
+Summary: The appearance the popover draws its default colours in
+
+Parameters:
+pMode (string): "dark" or "light"
+
+Description:
+A widget cannot read the system appearance itself, so it has to be told. The
+<hxtAppearance> is not saved with the widget and is not shown in the property
+inspector. In a stack, set it when the stack opens and from a
+systemAppearanceChanged handler:
+
+    on systemAppearanceChanged pMode
+       set the hxtAppearance of widget "Popover" to pMode
+    end systemAppearanceChanged
+
+The <fillColor>, <lineColor> and <fontColor> properties keep reporting the
+colours that were set, whatever the appearance.
+
+Related: followAppearance (property)
+**/
+property hxtAppearance get getHxtAppearance set setHxtAppearance
+metadata hxtAppearance.user_visible is "false"
+
+/**
 Syntax: get the contentRect of <widget>
 
 Summary: The area inside the popover that content can occupy
@@ -357,8 +406,16 @@ private variable mShowShadow as Boolean
 private variable mFillColor as Color
 private variable mLineColor as Color
 private variable mTextColor as Color
+private variable mFollowAppearance as Boolean
+private variable mIsDark as Boolean
 
 constant kShadowMargin is 8
+
+-- The light defaults, as the colour properties report them. A colour that
+-- still has this value follows the appearance.
+constant kLightFillColor is "255,255,255,255"
+constant kLightLineColor is "170,170,170,255"
+constant kLightTextColor is "0,0,0,255"
 
 private handler setDefaults() returns nothing
 	put the empty array into mStyledText
@@ -375,6 +432,8 @@ private handler setDefaults() returns nothing
 	put color [1, 1, 1, 1] into mFillColor
 	put color [170/255, 170/255, 170/255, 1] into mLineColor
 	put color [0, 0, 0, 1] into mTextColor
+	put true into mFollowAppearance
+	put false into mIsDark
 end handler
 
 public handler OnCreate() returns nothing
@@ -396,6 +455,7 @@ public handler OnSave(out rProperties as Array)
 	put colorString(mFillColor) into rProperties["fillColor"]
 	put colorString(mLineColor) into rProperties["lineColor"]
 	put colorString(mTextColor) into rProperties["fontColor"]
+	put mFollowAppearance into rProperties["followAppearance"]
 end handler
 
 public handler OnLoad(in pProperties as Array)
@@ -437,6 +497,9 @@ public handler OnLoad(in pProperties as Array)
 	if "lineColor" is among the keys of pProperties then
 		put loadedColor(pProperties["lineColor"], mLineColor) into mLineColor
 	end if
+	if "followAppearance" is among the keys of pProperties then
+		put pProperties["followAppearance"] into mFollowAppearance
+	end if
 	if "fontColor" is among the keys of pProperties then
 		put loadedColor(pProperties["fontColor"], mTextColor) into mTextColor
 	end if
@@ -460,7 +523,7 @@ public handler OnPaint() returns nothing
 	if mShowShadow then
 		begin layer with shadowEffect() on this canvas
 	end if
-	set the paint of this canvas to solid paint with mFillColor
+	set the paint of this canvas to solid paint with drawnColor(mFillColor, kLightFillColor, color [44/255, 44/255, 46/255, 1])
 	fill tPath on this canvas
 	if mShowShadow then
 		end layer on this canvas
@@ -468,7 +531,7 @@ public handler OnPaint() returns nothing
 
 	if mLineSize > 0 then
 		set the stroke width of this canvas to mLineSize
-		set the paint of this canvas to solid paint with mLineColor
+		set the paint of this canvas to solid paint with drawnColor(mLineColor, kLightLineColor, color [96/255, 96/255, 100/255, 1])
 		stroke tPath on this canvas
 	end if
 
@@ -652,6 +715,14 @@ private handler drawText(in pRect as Rectangle) returns nothing
 		end if
 	end if
 
+	-- The text only goes light when the fill behind it goes dark: default
+	-- text on a fill that has been set stays as it is.
+	variable tTextColor as Color
+	put mTextColor into tTextColor
+	if colorString(mFillColor) is kLightFillColor then
+		put drawnColor(mTextColor, kLightTextColor, color [235/255, 235/255, 235/255, 1]) into tTextColor
+	end if
+
 	save state of this canvas
 	clip to pRect on this canvas
 
@@ -715,7 +786,7 @@ private handler drawText(in pRect as Rectangle) returns nothing
 			variable tColor as optional Color
 			put colorFromString(stringOf(tRun, "color")) into tColor
 			if tColor is nothing then
-				put mTextColor into tColor
+				put tTextColor into tColor
 			end if
 			set the paint of this canvas to solid paint with tColor
 
@@ -1211,6 +1282,32 @@ end handler
 private handler setTextColor(in pColor as String) returns nothing
 	put parsedColor(pColor) into mTextColor
 	redraw all
+end handler
+
+private handler setFollowAppearance(in pFollow as Boolean) returns nothing
+	put pFollow into mFollowAppearance
+	redraw all
+end handler
+
+private handler getHxtAppearance() returns String
+	if mIsDark then
+		return "dark"
+	end if
+	return "light"
+end handler
+
+private handler setHxtAppearance(in pMode as String) returns nothing
+	put the lower of pMode is "dark" into mIsDark
+	redraw all
+end handler
+
+-- The colour to draw with: pColor, unless the popover is following a dark
+-- appearance and pColor is still the light default.
+private handler drawnColor(in pColor as Color, in pLightDefault as String, in pDarkDefault as Color) returns Color
+	if mIsDark and mFollowAppearance and colorString(pColor) is pLightDefault then
+		return pDarkDefault
+	end if
+	return pColor
 end handler
 
 private handler getContentRect() returns String
