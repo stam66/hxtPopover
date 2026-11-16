@@ -1,0 +1,30 @@
+script "HXTPopoverGenDocs"
+-- Writes api.lcdoc from the doc comments of an LCB source file, with the
+-- HyperXTalk docs parser. Run by build.sh in a headless (-ui) engine.
+-- Environment: HXT (HyperXTalk checkout), GENDOCS_SOURCE (the .lcb file),
+-- GENDOCS_OUT (the api.lcdoc to write), GENDOCS_LOG (messages)
+
+local sLog
+
+on startup
+   try
+      start using stack ($HXT & "/ide-support/revdocsparser.livecodescript")
+      local tSource, tDocs
+      put textDecode(url ("binfile:" & $GENDOCS_SOURCE), "utf-8") into tSource
+      put revDocsGenerateDocsFileFromText(tSource, $GENDOCS_SOURCE) into tDocs
+      put textEncode(tDocs, "utf-8") into url ("binfile:" & $GENDOCS_OUT)
+   catch tError
+      put "error:" && tError & return after sLog
+   end try
+   put sLog into url ("file:" & $GENDOCS_LOG)
+   quit
+end startup
+
+-- The parser reports problems through these.
+on logWarning pMessage, pSource
+   put "warning:" && pMessage & return after sLog
+end logWarning
+
+on logError pMessage, pSource
+   put "error:" && pMessage & return after sLog
+end logError

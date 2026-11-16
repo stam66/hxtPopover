@@ -1,12 +1,26 @@
-/*
-hxtPopover: a popover bubble for HyperXTalk.
+/**
+A popover: a rounded bubble with an arrow on one side and optional styled text.
 
-The widget draws a rounded rectangle with an arrow on one side and, optionally,
-a block of wrapped text inside it. A widget cannot contain other controls, so
-to show controls in the popover leave the text empty, place the controls over
-the widget (the contentRect property says where) and group them with it.
+Use a popover to point at something on a card and say something about it, or
+as a backdrop for other controls.
+
+To show text, type and style it in the Contents tab of the property
+inspector, or set the <styledText> or <text> property from script.
+
+A widget cannot contain other controls. To show controls in a popover, leave
+its text empty, place the controls over the widget and group them with it.
+The <contentRect> property says where the inside of the bubble is:
+
+    set the rect of field "Details" to the contentRect of widget "Popover"
+
+The arrow is set with <arrowSide>, <arrowPosition> and <arrowSize>, and the
+bubble with <cornerRadius>, <lineSize>, <showShadow>, <fillColor> and
+<lineColor>. Colours still at their defaults follow dark mode; see
+<followAppearance> and <hxtAppearance>.
+
+A widget only sees clicks inside its own rectangle, so dismissing a popover
+when the user clicks elsewhere is left to the stack's scripts.
 */
-
 widget com.hyperxtalk.widget.popover
 
 use com.livecode.canvas

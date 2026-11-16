@@ -6,9 +6,15 @@ It is the successor to [skPopover](https://github.com/stam66/skPopover), which d
 
 ![Popovers with arrows on each side, plain and styled text, and one used as a backdrop for a field](docs/popovers.png)
 
-## Using it
+## Installing
 
-Download `com.hyperxtalk.widget.popover.lce` from the [latest release](https://github.com/stam66/hxtPopover/releases/latest) (or build it, see below), install it with the Extension Manager, then drag a Popover from the Tools palette.
+1. Download `com.hyperxtalk.widget.popover.lce` from the [latest release](https://github.com/stam66/hxtPopover/releases/latest).
+2. In HyperXTalk, open **Tools > Extension Manager** and install the file.
+3. Drag a Popover from the Tools palette onto a card.
+
+If an earlier version of the widget was already loaded, quit and reopen HyperXTalk after installing. The widget's properties are documented in the Dictionary once it is installed.
+
+## Using it
 
 A popover can be used in two ways:
 
@@ -86,23 +92,28 @@ end updatePopovers
 
 This is the same `hxtAppearance` property the widgets bundled with HyperXTalk use. The IDE sets it for those widgets automatically; at the time of writing it does not do so for widgets installed as extensions, so while editing in the IDE a popover stays light unless your stack's own handlers set it.
 
-## Building
+## Building from source
 
-`build.sh` compiles `popover.lcb` with the `lc-compile` from a HyperXTalk source checkout and zips the extension:
+Most people will not need to: the release file above is ready to install. To build it yourself, for example after changing `popover.lcb`:
+
+### With the Extension Builder
+
+1. Clone or download this repository.
+2. In HyperXTalk, open **Tools > Extension Builder**.
+3. Click **Open an existing extension** and choose `popover.lcb`.
+4. Click **Test** to try the widget, **Install** to install it in the IDE, or **Package** to produce a `.lce` file.
+
+### From the command line
+
+`build.sh` does the same without the IDE. It needs a HyperXTalk source checkout with a macOS Release build:
 
 ```
 HXT=/path/to/HyperXTalk ./build.sh
 ```
 
-`HXT` defaults to `~/Developer/HyperXTalk`, and the script expects a macOS Release build under `_build/mac/Release`.
+It compiles `popover.lcb` with that checkout's `lc-compile`, generates the dictionary entry (`api.lcdoc`) from the doc comments, and writes `build/com.hyperxtalk.widget.popover.lce`. `HXT` defaults to `~/Developer/HyperXTalk`.
 
-## Testing
-
-```
-test/run.sh
-```
-
-runs the widget in a headless engine, checks its properties, saves and reloads a stack, and writes snapshots to `build/test`.
+`test/run.sh` then runs the widget in a headless engine: it checks the properties, saves and reloads a stack, and writes snapshots to `build/test`.
 
 ## Limitations
 
