@@ -192,6 +192,7 @@ Things to know:
 - It shows text only. Use `text` or `styledText` in the array, not both.
 - A popup starts with the light colours each time. Pass `hxtAppearance` as above, or set `fillColor` and `fontColor`, to match dark mode.
 - It can extend beyond the stack's window, and is not kept on the screen.
+- On macOS the popup's window casts the system's own shadow, so the popover's shadow is not drawn as well. `showShadow` still sets the 8 pixel margin.
 - `anchor`, `arrowLoc` and `keepInWindow` have no effect in a popup.
 
 ## Text

@@ -29,7 +29,7 @@ use com.livecode.engine
 
 metadata title is "Popover"
 metadata author is "Stam Kapetanakis"
-metadata version is "0.3.0"
+metadata version is "0.3.1"
 metadata preferredSize is "240,140"
 metadata svgicon is "M4,2h56a4,4,0,0,1,4,4v32a4,4,0,0,1,-4,4H38l-6,10l-6,-10H4a4,4,0,0,1,-4,-4V6a4,4,0,0,1,4,-4z"
 
@@ -711,12 +711,20 @@ public handler OnPaint() returns nothing
 	variable tPath as Path
 	put bubblePath(tBody) into tPath
 
-	if mShowShadow then
+	-- On macOS a popup's window casts a shadow of its own, in the shape of
+	-- what is drawn. Drawing ours as well gives a hard grey band.
+	variable tDrawShadow as Boolean
+	put mShowShadow into tDrawShadow
+	if tDrawShadow and currently popped up and the operating system is "mac" then
+		put false into tDrawShadow
+	end if
+
+	if tDrawShadow then
 		begin layer with shadowEffect() on this canvas
 	end if
 	set the paint of this canvas to solid paint with drawnColor(mFillColor, kLightFillColor, color [44/255, 44/255, 46/255, 1])
 	fill tPath on this canvas
-	if mShowShadow then
+	if tDrawShadow then
 		end layer on this canvas
 	end if
 
