@@ -29,7 +29,7 @@ use com.livecode.engine
 
 metadata title is "Popover"
 metadata author is "Stam Kapetanakis"
-metadata version is "0.2.0"
+metadata version is "0.3.0"
 metadata preferredSize is "240,140"
 metadata svgicon is "M4,2h56a4,4,0,0,1,4,4v32a4,4,0,0,1,-4,4H38l-6,10l-6,-10H4a4,4,0,0,1,-4,-4V6a4,4,0,0,1,4,-4z"
 
@@ -191,9 +191,9 @@ Syntax: get the arrowSize of <widget>
 Summary: The length of the arrow in pixels
 
 Parameters:
-pSize (number): How far the arrow sticks out from the body. Its base is twice as wide.
+pSize (number): How far the arrow sticks out from the body, as a whole number.
 
-Related: arrowSide (property), arrowPosition (property)
+Related: arrowWidth (property), arrowSide (property), arrowPosition (property)
 **/
 property arrowSize get mArrowSize set setArrowSize
 metadata arrowSize.editor is "com.livecode.pi.number"
@@ -202,6 +202,30 @@ metadata arrowSize.max is "100"
 metadata arrowSize.step is "1"
 metadata arrowSize.default is "12"
 metadata arrowSize.label is "Arrow size"
+
+/**
+Syntax: set the arrowWidth of <widget> to <pWidth>
+Syntax: get the arrowWidth of <widget>
+
+Summary: The width of the arrow's base in pixels
+
+Parameters:
+pWidth (number): How wide the arrow is where it joins the body, as a whole number.
+
+Description:
+The <arrowWidth> is the width of the arrow along the side of the popover it is
+on, and the <arrowSize> how far it sticks out. An arrow wider than the straight
+part of its side is drawn as wide as that part.
+
+Related: arrowSize (property), arrowSide (property), arrowPosition (property)
+**/
+property arrowWidth get mArrowWidth set setArrowWidth
+metadata arrowWidth.editor is "com.livecode.pi.number"
+metadata arrowWidth.min is "0"
+metadata arrowWidth.max is "200"
+metadata arrowWidth.step is "1"
+metadata arrowWidth.default is "24"
+metadata arrowWidth.label is "Arrow width"
 
 /**
 Syntax: set the cornerRadius of <widget> to <pRadius>
@@ -381,6 +405,106 @@ property hxtAppearance get getHxtAppearance set setHxtAppearance
 metadata hxtAppearance.user_visible is "false"
 
 /**
+Syntax: set the arrowLoc of <widget> to <point>
+Syntax: get the arrowLoc of <widget>
+
+Summary: The position of the tip of the popover's arrow
+
+Description:
+The <arrowLoc> is the point of the popover's arrow, as "x,y" in card coordinates.
+Setting it moves the popover, without resizing it, so that the arrow points at
+that position:
+
+    set the arrowLoc of widget "Popover" to the clickLoc
+    show widget "Popover"
+
+To point at a control, give the middle of the edge that faces the popover. For
+a popover below a button, with its <arrowSide> set to "top":
+
+    set the arrowLoc of widget "Popover" to \
+          item 1 of the loc of button "Info", the bottom of button "Info"
+
+The <arrowLoc> depends on the <arrowSide>, <arrowPosition> and <arrowSize>, so
+set those first. With an <arrowSide> of "none" it is the middle of the
+popover's body. If the popover would not fit in the window there, see
+<keepInWindow>.
+
+A popover shown with the popup widget command needs neither <arrowLoc> nor
+<anchor>: the location given to the command is where its arrow points.
+
+    popup widget "com.hyperxtalk.widget.popover" \
+          at the right of me, item 2 of the loc of me with properties tProps
+ The property is not saved: it is another way of setting the
+popover's position.
+
+Related: anchor (property), arrowSide (property), arrowPosition (property), contentRect (property)
+**/
+property arrowLoc get getArrowLoc set setArrowLoc
+metadata arrowLoc.user_visible is "false"
+
+/**
+Syntax: set the anchor of <widget> to <controlOrRect>
+Syntax: get the anchor of <widget>
+
+Summary: Points the popover's arrow at a control or a rectangle
+
+Description:
+Setting the <anchor> moves the popover so that its arrow points at the middle
+of the edge of the anchor that faces it. Which edge that is follows from the
+<arrowSide>: a popover with its arrow on the left sits to the right of its
+anchor, so the arrow points at the anchor's right edge.
+
+    set the arrowSide of widget "Popover" to "left"
+    set the anchor of widget "Popover" to the long id of me
+    show widget "Popover"
+
+The anchor is a reference to a control, such as its long id, or a rectangle
+as "left,top,right,bottom" in card coordinates, for things that are not
+controls:
+
+    set the anchor of widget "Popover" to the formattedRect of line 3 of field "List"
+
+For a control inside a group, only the part of it the group shows is used, so
+a row that is half scrolled out of a list is pointed at where it can be seen.
+
+The popover is positioned once, when the property is set: it does not follow
+the anchor afterwards, and the anchor is not saved. Set the <arrowSide> first.
+The popover is kept in the window as it is for <arrowLoc>; see <keepInWindow>.
+With an <arrowSide> of "none" the middle of the popover is put on the middle
+of the anchor.
+
+Related: arrowLoc (property), arrowSide (property), keepInWindow (property)
+**/
+property anchor get mAnchor set setAnchor
+metadata anchor.user_visible is "false"
+
+/**
+Syntax: set the keepInWindow of <widget> to {true | false}
+Syntax: get the keepInWindow of <widget>
+
+Summary: Whether setting the arrowLoc keeps the popover inside the window
+
+Description:
+When <keepInWindow> is true, setting the <arrowLoc> to a position that would
+put part of the popover outside its card moves the popover back along the
+arrow's side, and the arrow along the popover to match, so that the arrow
+still points at the position. A popover with its arrow on the left that is
+pointed at something near the bottom of the window ends up higher, with its
+arrow nearer its bottom corner.
+
+The <arrowPosition> keeps the value that was set and is used again the next
+time the <arrowLoc> is set. The arrow stops at the ends of its side, so the
+popover can still overhang when the position is very close to the edge of
+the card. The popover is not moved to another side of the position.
+
+Related: arrowLoc (property), arrowPosition (property)
+**/
+property keepInWindow get mKeepInWindow set setKeepInWindow
+metadata keepInWindow.editor is "com.livecode.pi.boolean"
+metadata keepInWindow.default is "true"
+metadata keepInWindow.label is "Keep in window"
+
+/**
 Syntax: get the contentRect of <widget>
 
 Summary: The area inside the popover that content can occupy
@@ -412,7 +536,13 @@ private variable mTextAlign as String
 private variable mTextVAlign as String
 private variable mArrowSide as String
 private variable mArrowPosition as Number
+-- Where the arrow is drawn: mArrowPosition, unless setting the arrowLoc had to
+-- slide the popover along to keep it in the window.
+private variable mDrawnArrowPosition as Number
+private variable mKeepInWindow as Boolean
+private variable mAnchor as String
 private variable mArrowSize as Number
+private variable mArrowWidth as Number
 private variable mCornerRadius as Number
 private variable mLineSize as Number
 private variable mMargin as Number
@@ -438,7 +568,11 @@ private handler setDefaults() returns nothing
 	put "center" into mTextVAlign
 	put "bottom" into mArrowSide
 	put 50 into mArrowPosition
+	put 50 into mDrawnArrowPosition
+	put true into mKeepInWindow
+	put "" into mAnchor
 	put 12 into mArrowSize
+	put 24 into mArrowWidth
 	put 10 into mCornerRadius
 	put 1 into mLineSize
 	put 10 into mMargin
@@ -461,7 +595,10 @@ public handler OnSave(out rProperties as Array)
 	put mTextVAlign into rProperties["textVerticalAlign"]
 	put mArrowSide into rProperties["arrowSide"]
 	put mArrowPosition into rProperties["arrowPosition"]
+	put mDrawnArrowPosition into rProperties["drawnArrowPosition"]
+	put mKeepInWindow into rProperties["keepInWindow"]
 	put mArrowSize into rProperties["arrowSize"]
+	put mArrowWidth into rProperties["arrowWidth"]
 	put mCornerRadius into rProperties["cornerRadius"]
 	put mLineSize into rProperties["lineSize"]
 	put mMargin into rProperties["contentMargin"]
@@ -489,9 +626,22 @@ public handler OnLoad(in pProperties as Array)
 	end if
 	if "arrowPosition" is among the keys of pProperties then
 		put pProperties["arrowPosition"] into mArrowPosition
+		put mArrowPosition into mDrawnArrowPosition
+	end if
+	if "drawnArrowPosition" is among the keys of pProperties then
+		put pProperties["drawnArrowPosition"] into mDrawnArrowPosition
+	end if
+	if "keepInWindow" is among the keys of pProperties then
+		put pProperties["keepInWindow"] into mKeepInWindow
 	end if
 	if "arrowSize" is among the keys of pProperties then
 		put pProperties["arrowSize"] into mArrowSize
+	end if
+	-- Before there was an arrowWidth the base was twice the arrowSize.
+	if "arrowWidth" is among the keys of pProperties then
+		put pProperties["arrowWidth"] into mArrowWidth
+	else
+		put 2 * mArrowSize into mArrowWidth
 	end if
 	if "cornerRadius" is among the keys of pProperties then
 		put pProperties["cornerRadius"] into mCornerRadius
@@ -517,6 +667,33 @@ public handler OnLoad(in pProperties as Array)
 	if "fontColor" is among the keys of pProperties then
 		put loadedColor(pProperties["fontColor"], mTextColor) into mTextColor
 	end if
+end handler
+
+-- In a popup the engine puts the top left of the popup window at the
+-- location it was given. A popover is asked to point at that location, so
+-- the window is moved to bring the tip of the arrow there instead.
+public handler OnOpen() returns nothing
+	if currently popped up then
+		placePopup()
+	end if
+end handler
+
+private handler placePopup() returns nothing
+	variable tWindow as ScriptObject
+	-- The widget is on a card of the popup's stack.
+	put the owner of (the owner of my script object) into tWindow
+
+	variable tTopLeft as optional List
+	put pointList(property "topLeft" of tWindow) into tTopLeft
+	if tTopLeft is nothing then
+		return
+	end if
+
+	put mArrowPosition into mDrawnArrowPosition
+	variable tOffset as List
+	put tipOffset() into tOffset
+	set property "topLeft" of tWindow to \
+			wholeString(tTopLeft[1] - tOffset[1]) & "," & wholeString(tTopLeft[2] - tOffset[2])
 end handler
 
 public handler OnGeometryChanged() returns nothing
@@ -635,22 +812,10 @@ private handler bubblePath(in pBody as Rectangle) returns Path
 	variable tRadius as Number
 	put minOf(mCornerRadius, minOf((tR - tL) / 2, (tB - tT) / 2)) into tRadius
 
-	-- The arrow: tHalf is half of its base, tCentre where it sits on its side.
-	variable tSideLength as Number
-	variable tSideStart as Number
-	if mArrowSide is "top" or mArrowSide is "bottom" then
-		put tR - tL - 2 * tRadius into tSideLength
-		put tL + tRadius into tSideStart
-	else
-		put tB - tT - 2 * tRadius into tSideLength
-		put tT + tRadius into tSideStart
-	end if
 	variable tHalf as Number
-	put minOf(mArrowSize, tSideLength / 2) into tHalf
 	variable tCentre as Number
-	put tSideStart + tHalf + (tSideLength - 2 * tHalf) * mArrowPosition / 100 into tCentre
 	variable tHasArrow as Boolean
-	put mArrowSide is not "none" and mArrowSize > 0 and tHalf > 0 into tHasArrow
+	arrowGeometry(pBody, tHalf, tCentre, tHasArrow)
 
 	variable tPath as Path
 	put the empty path into tPath
@@ -1238,31 +1403,39 @@ private handler setArrowSide(in pSide as String) returns nothing
 		throw "arrowSide must be left, top, right, bottom or none"
 	end if
 	put tSide into mArrowSide
+	put mArrowPosition into mDrawnArrowPosition
 	redraw all
 end handler
 
 private handler setArrowPosition(in pPercent as Number) returns nothing
-	put maxOf(0, minOf(100, pPercent)) into mArrowPosition
+	put wholeNumber(maxOf(0, minOf(100, pPercent))) into mArrowPosition
+	put mArrowPosition into mDrawnArrowPosition
 	redraw all
 end handler
 
 private handler setArrowSize(in pSize as Number) returns nothing
-	put maxOf(0, pSize) into mArrowSize
+	put wholeNumber(maxOf(0, pSize)) into mArrowSize
+	redraw all
+end handler
+
+private handler setArrowWidth(in pWidth as Number) returns nothing
+	put wholeNumber(maxOf(0, pWidth)) into mArrowWidth
 	redraw all
 end handler
 
 private handler setCornerRadius(in pRadius as Number) returns nothing
-	put maxOf(0, pRadius) into mCornerRadius
+	put wholeNumber(maxOf(0, pRadius)) into mCornerRadius
 	redraw all
 end handler
 
 private handler setLineSize(in pSize as Number) returns nothing
-	put maxOf(0, pSize) into mLineSize
+	-- Half pixel outlines are useful, so one decimal place is kept.
+	put wholeNumber(maxOf(0, pSize) * 10) / 10 into mLineSize
 	redraw all
 end handler
 
 private handler setMargin(in pMargin as Number) returns nothing
-	put maxOf(0, pMargin) into mMargin
+	put wholeNumber(maxOf(0, pMargin)) into mMargin
 	redraw all
 end handler
 
@@ -1324,6 +1497,332 @@ private handler drawnColor(in pColor as Color, in pLightDefault as String, in pD
 	return pColor
 end handler
 
+-- The arrow on the side of pBody: rHalf is half of its base, rCentre where
+-- its middle sits along its side, rHasArrow whether one is drawn at all.
+private handler arrowGeometry(in pBody as Rectangle, out rHalf as Number, out rCentre as Number, out rHasArrow as Boolean) returns nothing
+	variable tRadius as Number
+	put minOf(mCornerRadius, minOf(the width of pBody / 2, the height of pBody / 2)) into tRadius
+
+	variable tSideLength as Number
+	variable tSideStart as Number
+	if mArrowSide is "top" or mArrowSide is "bottom" then
+		put the width of pBody - 2 * tRadius into tSideLength
+		put the left of pBody + tRadius into tSideStart
+	else
+		put the height of pBody - 2 * tRadius into tSideLength
+		put the top of pBody + tRadius into tSideStart
+	end if
+	put minOf(mArrowWidth / 2, tSideLength / 2) into rHalf
+	put tSideStart + rHalf + (tSideLength - 2 * rHalf) * mDrawnArrowPosition / 100 into rCentre
+	put mArrowSide is not "none" and mArrowSize > 0 and rHalf > 0 into rHasArrow
+end handler
+
+-- The tip of the arrow in widget coordinates, as whole pixels: [x, y]. With
+-- no arrow it is the middle of the body.
+private handler tipOffset() returns List
+	variable tBody as Rectangle
+	put bodyRect() into tBody
+
+	variable tHalf as Number
+	variable tCentre as Number
+	variable tHasArrow as Boolean
+	arrowGeometry(tBody, tHalf, tCentre, tHasArrow)
+
+	variable tX as Number
+	variable tY as Number
+	put (the left of tBody + the right of tBody) / 2 into tX
+	put (the top of tBody + the bottom of tBody) / 2 into tY
+	if tHasArrow then
+		if mArrowSide is "top" then
+			put tCentre into tX
+			put the top of tBody - mArrowSize into tY
+		else if mArrowSide is "bottom" then
+			put tCentre into tX
+			put the bottom of tBody + mArrowSize into tY
+		else if mArrowSide is "left" then
+			put the left of tBody - mArrowSize into tX
+			put tCentre into tY
+		else
+			put the right of tBody + mArrowSize into tX
+			put tCentre into tY
+		end if
+	end if
+	return [the floor of (tX + 0.5), the floor of (tY + 0.5)]
+end handler
+
+private handler getArrowLoc() returns String
+	variable tOffset as List
+	put tipOffset() into tOffset
+	return wholeString(the left of my rectangle + tOffset[1]) & "," & \
+			wholeString(the top of my rectangle + tOffset[2])
+end handler
+
+-- Moves the widget so that the tip of its arrow is at pLoc ("x,y" in card
+-- coordinates).
+private handler setArrowLoc(in pLoc as String) returns nothing
+	variable tItems as List
+	split pLoc by "," into tItems
+	if the number of elements in tItems is not 2 then
+		throw "arrowLoc must be a point: x,y"
+	end if
+	variable tX as optional Number
+	variable tY as optional Number
+	put tItems[1] parsed as number into tX
+	put tItems[2] parsed as number into tY
+	if tX is nothing or tY is nothing then
+		throw "arrowLoc must be a point: x,y"
+	end if
+	pointArrowAt(tX, tY)
+end handler
+
+-- Moves the widget so that the tip of its arrow is at pX, pY on the card.
+private handler pointArrowAt(in pX as Number, in pY as Number) returns nothing
+	-- In a popup the widget fills its window, which is placed when it opens.
+	if currently popped up then
+		return
+	end if
+
+	-- Start from the arrow position that was set, then slide the popover
+	-- along the arrow's side if it would leave the window.
+	put mArrowPosition into mDrawnArrowPosition
+	if mKeepInWindow then
+		slideIntoWindow(pX, pY)
+	end if
+
+	variable tOffset as List
+	put tipOffset() into tOffset
+	set property "topLeft" of my script object to \
+			wholeString(pX - tOffset[1]) & "," & wholeString(pY - tOffset[2])
+	redraw all
+end handler
+
+-- Points the arrow at the middle of the edge of pAnchor that faces the
+-- popover. pAnchor is a rect ("left,top,right,bottom" in card coordinates)
+-- or a reference to a control, whose rect is used, less any part hidden by
+-- the groups it is in.
+private handler setAnchor(in pAnchor as String) returns nothing
+	variable tRect as optional List
+	put rectList(pAnchor) into tRect
+	if tRect is nothing then
+		put controlRect(pAnchor) into tRect
+	end if
+	if tRect is nothing then
+		throw "anchor must be a control or a rect: left,top,right,bottom"
+	end if
+	put pAnchor into mAnchor
+
+	variable tMidX as Number
+	variable tMidY as Number
+	put (tRect[1] + tRect[3]) / 2 into tMidX
+	put (tRect[2] + tRect[4]) / 2 into tMidY
+	if mArrowSide is "left" then
+		pointArrowAt(tRect[3], tMidY)
+	else if mArrowSide is "right" then
+		pointArrowAt(tRect[1], tMidY)
+	else if mArrowSide is "top" then
+		pointArrowAt(tMidX, tRect[4])
+	else if mArrowSide is "bottom" then
+		pointArrowAt(tMidX, tRect[2])
+	else
+		pointArrowAt(tMidX, tMidY)
+	end if
+end handler
+
+-- pValue as a list of four numbers, or nothing if it is not a rect.
+private handler rectList(in pValue as optional any) returns optional List
+	return numberList(pValue, 4)
+end handler
+
+-- pValue as a list of two numbers, or nothing if it is not a point.
+private handler pointList(in pValue as optional any) returns optional List
+	return numberList(pValue, 2)
+end handler
+
+-- pValue, a list or a comma-separated string, as a list of pCount numbers.
+private handler numberList(in pValue as optional any, in pCount as Number) returns optional List
+	if pValue is a list then
+		if the number of elements in pValue is pCount then
+			return pValue
+		end if
+		return nothing
+	end if
+	if not (pValue is a string) then
+		return nothing
+	end if
+
+	variable tItems as List
+	split pValue by "," into tItems
+	if the number of elements in tItems is not pCount then
+		return nothing
+	end if
+	variable tRect as List
+	put [] into tRect
+	variable tItem as String
+	repeat for each element tItem in tItems
+		variable tNumber as optional Number
+		put tItem parsed as number into tNumber
+		if tNumber is nothing then
+			return nothing
+		end if
+		push tNumber onto tRect
+	end repeat
+	return tRect
+end handler
+
+-- The rect of the control pReference refers to, less whatever the groups it
+-- is in clip away: a row at the edge of a scrolling list is only partly
+-- visible. Nothing if there is no such control.
+private handler controlRect(in pReference as String) returns optional List
+	resolve script object pReference
+	variable tObject as optional ScriptObject
+	put the result into tObject
+	if tObject is nothing then
+		return nothing
+	end if
+	if not (tObject exists) then
+		return nothing
+	end if
+
+	variable tRect as optional List
+	put rectList(property "rect" of tObject) into tRect
+	if tRect is nothing then
+		return nothing
+	end if
+
+	variable tSteps as Number
+	repeat with tSteps from 1 up to 50
+		put the owner of tObject into tObject
+		variable tID as optional any
+		put property "long id" of tObject into tID
+		if not (tID is a string) then
+			exit repeat
+		end if
+		if not (tID begins with "group") then
+			exit repeat
+		end if
+		variable tGroup as optional List
+		put rectList(property "rect" of tObject) into tGroup
+		if tGroup is not nothing then
+			variable tClipped as List
+			put [maxOf(tRect[1], tGroup[1]), maxOf(tRect[2], tGroup[2]), \
+					minOf(tRect[3], tGroup[3]), minOf(tRect[4], tGroup[4])] into tClipped
+			-- A control wholly outside its group is not visible at all:
+			-- leave its rect as it is.
+			if tClipped[3] > tClipped[1] and tClipped[4] > tClipped[2] then
+				put tClipped into tRect
+			end if
+		end if
+	end repeat
+	return tRect
+end handler
+
+private handler setKeepInWindow(in pKeep as Boolean) returns nothing
+	put pKeep into mKeepInWindow
+end handler
+
+-- With the arrow's tip at pX, pY: if the widget would leave the card along
+-- the arrow's side, moves the arrow along that side (mDrawnArrowPosition) so
+-- that the widget stays on the card. The arrow stops at the ends of its
+-- side, so a tip very close to the card's edge still leaves the widget
+-- overhanging.
+private handler slideIntoWindow(in pX as Number, in pY as Number) returns nothing
+	variable tBody as Rectangle
+	put bodyRect() into tBody
+	variable tHalf as Number
+	variable tCentre as Number
+	variable tHasArrow as Boolean
+	arrowGeometry(tBody, tHalf, tCentre, tHasArrow)
+	if not tHasArrow then
+		return
+	end if
+
+	variable tCardWidth as Number
+	variable tCardHeight as Number
+	if not cardSize(tCardWidth, tCardHeight) then
+		return
+	end if
+
+	-- Along the arrow's side: where the tip is, how long the widget and the
+	-- card are, and the straight part of the side the arrow can move on.
+	variable tTip as Number
+	variable tLength as Number
+	variable tLimit as Number
+	variable tRadius as Number
+	put minOf(mCornerRadius, minOf(the width of tBody / 2, the height of tBody / 2)) into tRadius
+	variable tSideStart as Number
+	variable tSideLength as Number
+	if mArrowSide is "top" or mArrowSide is "bottom" then
+		put pX into tTip
+		put my width into tLength
+		put tCardWidth into tLimit
+		put the left of tBody + tRadius into tSideStart
+		put the width of tBody - 2 * tRadius into tSideLength
+	else
+		put pY into tTip
+		put my height into tLength
+		put tCardHeight into tLimit
+		put the top of tBody + tRadius into tSideStart
+		put the height of tBody - 2 * tRadius into tSideLength
+	end if
+
+	-- Where the widget would start, and where it has to start to fit.
+	variable tStart as Number
+	put tTip - tCentre into tStart
+	variable tWanted as Number
+	put maxOf(0, minOf(tStart, tLimit - tLength)) into tWanted
+	if tWanted is tStart then
+		return
+	end if
+
+	variable tTravel as Number
+	put tSideLength - 2 * tHalf into tTravel
+	if tTravel <= 0 then
+		return
+	end if
+	put maxOf(0, minOf(100, (tTip - tWanted - tSideStart - tHalf) * 100 / tTravel)) into mDrawnArrowPosition
+end handler
+
+-- The size of the card the widget is on. False if it cannot be found.
+private handler cardSize(out rWidth as Number, out rHeight as Number) returns Boolean
+	put 0 into rWidth
+	put 0 into rHeight
+
+	variable tObject as ScriptObject
+	put my script object into tObject
+	variable tSteps as Number
+	repeat with tSteps from 1 up to 50
+		put the owner of tObject into tObject
+		variable tID as optional any
+		put property "long id" of tObject into tID
+		if not (tID is a string) then
+			return false
+		end if
+		if tID begins with "card" then
+			put numberFrom(property "width" of tObject) into rWidth
+			put numberFrom(property "height" of tObject) into rHeight
+			return rWidth > 0 and rHeight > 0
+		end if
+		if tID begins with "stack" then
+			return false
+		end if
+	end repeat
+	return false
+end handler
+
+private handler numberFrom(in pValue as optional any) returns Number
+	if pValue is a number then
+		return pValue
+	end if
+	if pValue is a string then
+		variable tParsed as optional Number
+		put pValue parsed as number into tParsed
+		if tParsed is not nothing then
+			return tParsed
+		end if
+	end if
+	return 0
+end handler
+
 private handler getContentRect() returns String
 	variable tRect as Rectangle
 	put insetRect(bodyRect(), mLineSize / 2 + mMargin) into tRect
@@ -1342,6 +1841,11 @@ end handler
 --------------------------------------------------------------------------------
 -- Helpers
 --------------------------------------------------------------------------------
+
+-- pValue to the nearest whole number.
+private handler wholeNumber(in pValue as Number) returns Number
+	return the floor of (pValue + 0.5)
+end handler
 
 private handler minOf(in pLeft as Number, in pRight as Number) returns Number
 	if pLeft < pRight then

@@ -63,12 +63,110 @@ command runTests
    set the rect of widget "P1" to 20,20,240,160
    check "default arrowSide", the arrowSide of widget "P1", "bottom"
    check "default arrowPosition", the arrowPosition of widget "P1", 50
+   -- numbers are kept whole, the lineSize to one decimal place
+   check "default arrowWidth", the arrowWidth of widget "P1", 24
+   set the arrowWidth of widget "P1" to 40.4
+   check "arrowWidth whole", the arrowWidth of widget "P1", 40
+   set the arrowSize of widget "P1" to 12.6
+   check "arrowSize whole", the arrowSize of widget "P1", 13
+   set the arrowPosition of widget "P1" to 33.4
+   check "arrowPosition whole", the arrowPosition of widget "P1", 33
+   set the cornerRadius of widget "P1" to 7.5
+   check "cornerRadius whole", the cornerRadius of widget "P1", 8
+   set the contentMargin of widget "P1" to 9.2
+   check "contentMargin whole", the contentMargin of widget "P1", 9
+   set the lineSize of widget "P1" to 1.26
+   check "lineSize one decimal", the lineSize of widget "P1", 1.3
+   set the arrowWidth of widget "P1" to 24
+   set the arrowSize of widget "P1" to 12
+   set the arrowPosition of widget "P1" to 50
+   set the cornerRadius of widget "P1" to 10
+   set the contentMargin of widget "P1" to 10
+   set the lineSize of widget "P1" to 1
    check "default text", the text of widget "P1", empty
    check "default fillColor", the fillColor of widget "P1", "255,255,255,255"
    check "default lineColor", the lineColor of widget "P1", "170,170,170,255"
    check "default showShadow", the showShadow of widget "P1", true
    -- shadow 8 + line 1 + margin 10 = 19 in; arrow 12 at the bottom
    check "default contentRect", the contentRect of widget "P1", "39,39,221,129"
+   -- the tip: half way along the bottom, 8.5 up from the bottom edge
+   check "default arrowLoc", the arrowLoc of widget "P1", "130,152"
+   set the arrowLoc of widget "P1" to "300,400"
+   check "arrowLoc set", the arrowLoc of widget "P1", "300,400"
+   check "arrowLoc moves, keeps size", the rect of widget "P1", "190,268,410,408"
+   set the arrowSide of widget "P1" to "left"
+   set the arrowLoc of widget "P1" to "50,90"
+   check "arrowLoc left arrow", the arrowLoc of widget "P1", "50,90"
+   check "arrowLoc left arrow rect", the rect of widget "P1", "41,20,261,160"
+   -- the card is 700 by 460 and the widget 140 high: near the bottom and
+   -- the top the popover slides along and the arrow moves to match
+   check "default keepInWindow", the keepInWindow of widget "P1", true
+   set the arrowLoc of widget "P1" to "50,420"
+   check "bottom edge: arrow still at point", the arrowLoc of widget "P1", "50,420"
+   check "bottom edge: kept in window", the rect of widget "P1", "41,320,261,460"
+   check "bottom edge: arrowPosition as set", the arrowPosition of widget "P1", 50
+   set the arrowLoc of widget "P1" to "50,40"
+   check "top edge: arrow still at point", the arrowLoc of widget "P1", "50,40"
+   check "top edge: kept in window", the rect of widget "P1", "41,0,261,140"
+   set the arrowLoc of widget "P1" to "50,90"
+   check "back in range: arrow returns", the rect of widget "P1", "41,20,261,160"
+   set the keepInWindow of widget "P1" to false
+   set the arrowLoc of widget "P1" to "50,420"
+   check "keepInWindow off", the rect of widget "P1", "41,350,261,490"
+   set the keepInWindow of widget "P1" to true
+   set the arrowSide of widget "P1" to "top"
+   set the arrowLoc of widget "P1" to "660,100"
+   check "right edge, top arrow: at point", the arrowLoc of widget "P1", "660,100"
+   check "right edge, top arrow: kept in window", the right of widget "P1", 700
+   -- 10 from the edge is closer than the arrow can get to the corner: the
+   -- arrow stays on the point and the popover overhangs
+   set the arrowLoc of widget "P1" to "690,100"
+   check "too near the edge: at point", the arrowLoc of widget "P1", "690,100"
+   check "too near the edge: overhangs", the right of widget "P1", 720
+   -- anchor: the arrow goes to the middle of the edge facing the popover
+   create button "Info"
+   set the rect of button "Info" to 300,200,380,230
+   set the arrowSide of widget "P1" to "left"
+   set the anchor of widget "P1" to the long id of button "Info"
+   check "anchor, left arrow", the arrowLoc of widget "P1", "380,215"
+   check "anchor is reported", the anchor of widget "P1", the long id of button "Info"
+   set the arrowSide of widget "P1" to "right"
+   set the anchor of widget "P1" to the long id of button "Info"
+   check "anchor, right arrow", the arrowLoc of widget "P1", "300,215"
+   set the arrowSide of widget "P1" to "top"
+   set the anchor of widget "P1" to "button" && quote & "Info" & quote
+   check "anchor, top arrow, by name", the arrowLoc of widget "P1", "340,230"
+   set the arrowSide of widget "P1" to "bottom"
+   set the anchor of widget "P1" to the long id of button "Info"
+   check "anchor, bottom arrow", the arrowLoc of widget "P1", "340,200"
+   set the arrowSide of widget "P1" to "left"
+   set the anchor of widget "P1" to "100,100,140,120"
+   check "anchor, rect", the arrowLoc of widget "P1", "140,110"
+   -- near the bottom the popover is still kept in the window
+   set the anchor of widget "P1" to "20,400,60,440"
+   check "anchor near the bottom: at point", the arrowLoc of widget "P1", "60,420"
+   check "anchor near the bottom: in window", the bottom of widget "P1", 460
+   -- a row half hidden by its group is pointed at where it shows
+   create group "Clip"
+   create field "Row" in group "Clip"
+   set the lockLoc of group "Clip" to true
+   set the rect of group "Clip" to 400,300,500,330
+   set the rect of field "Row" to 400,300,500,360
+   set the anchor of widget "P1" to the long id of field "Row"
+   check "clip set-up: group", the rect of group "Clip", "400,300,500,330"
+   check "clip set-up: field", the rect of field "Row", "400,300,500,360"
+   check "anchor clipped by its group", the arrowLoc of widget "P1", "500,315"
+   -- the handlers given in the README
+   showPopover the long id of widget "P1", the long id of button "Info", "left"
+   check "README showPopover points", the arrowLoc of widget "P1", "380,215"
+   check "README showPopover shows", the visible of widget "P1", true
+   hidePopovers
+   check "README hidePopovers", the visible of widget "P1", false
+   show widget "P1"
+   delete group "Clip"
+   delete button "Info"
+   set the arrowSide of widget "P1" to "bottom"
+   set the rect of widget "P1" to 20,20,240,160
    set the text of widget "P1" to "A popover with its arrow at the bottom and text that wraps over several lines."
 
    create widget "P2" as kWidgetKind
@@ -224,3 +322,20 @@ command runReload
    export snapshot from card 1 of stack "PopoverTest" to file ($HXTPOPOVER_OUT & "/popovers-reloaded.png") as PNG
    logStep "reloaded snapshot written"
 end runReload
+
+-- As in the README.
+command showPopover pPopover, pControl, pArrowSide
+   if pArrowSide is empty then put "left" into pArrowSide
+   set the arrowSide of pPopover to pArrowSide
+   set the anchor of pPopover to pControl
+   set the layer of pPopover to top
+   show pPopover
+end showPopover
+
+command hidePopovers
+   repeat with i = 1 to the number of widgets of this card
+      if the kind of widget i is "com.hyperxtalk.widget.popover" then
+         hide widget i
+      end if
+   end repeat
+end hidePopovers
