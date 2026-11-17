@@ -2,7 +2,7 @@
 
 A popover for [HyperXTalk](https://github.com/emily-elizabeth/HyperXTalk): a rounded bubble with an arrow that points at something, with text inside it or your own controls on top of it. It is a widget, so everything is set from the property inspector or from script.
 
-![Popovers with arrows on each side, plain and styled text, and one used as a backdrop for a field](docs/popovers.png)
+<img width="559" height="330" alt="Screenshot 2026-11-17 at 11 24 06" src="https://github.com/user-attachments/assets/77be7d56-8b55-48be-a7a2-0ca7c057b4e0" />
 
 It is the successor to [skPopover](https://github.com/stam66/skPopover), which did the same job with a group of controls.
 
