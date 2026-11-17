@@ -123,28 +123,29 @@ command runTests
    set the arrowLoc of widget "P1" to "690,100"
    check "too near the edge: at point", the arrowLoc of widget "P1", "690,100"
    check "too near the edge: overhangs", the right of widget "P1", 720
-   -- anchor: the arrow goes to the middle of the edge facing the popover
+   -- anchor: the arrow goes to the middle of the edge facing the popover,
+   -- 4 pixels away from it
    create button "Info"
    set the rect of button "Info" to 300,200,380,230
    set the arrowSide of widget "P1" to "left"
    set the anchor of widget "P1" to the long id of button "Info"
-   check "anchor, left arrow", the arrowLoc of widget "P1", "380,215"
+   check "anchor, left arrow", the arrowLoc of widget "P1", "384,215"
    check "anchor is reported", the anchor of widget "P1", the long id of button "Info"
    set the arrowSide of widget "P1" to "right"
    set the anchor of widget "P1" to the long id of button "Info"
-   check "anchor, right arrow", the arrowLoc of widget "P1", "300,215"
+   check "anchor, right arrow", the arrowLoc of widget "P1", "296,215"
    set the arrowSide of widget "P1" to "top"
    set the anchor of widget "P1" to "button" && quote & "Info" & quote
-   check "anchor, top arrow, by name", the arrowLoc of widget "P1", "340,230"
+   check "anchor, top arrow, by name", the arrowLoc of widget "P1", "340,234"
    set the arrowSide of widget "P1" to "bottom"
    set the anchor of widget "P1" to the long id of button "Info"
-   check "anchor, bottom arrow", the arrowLoc of widget "P1", "340,200"
+   check "anchor, bottom arrow", the arrowLoc of widget "P1", "340,196"
    set the arrowSide of widget "P1" to "left"
    set the anchor of widget "P1" to "100,100,140,120"
-   check "anchor, rect", the arrowLoc of widget "P1", "140,110"
+   check "anchor, rect", the arrowLoc of widget "P1", "144,110"
    -- near the bottom the popover is still kept in the window
    set the anchor of widget "P1" to "20,400,60,440"
-   check "anchor near the bottom: at point", the arrowLoc of widget "P1", "60,420"
+   check "anchor near the bottom: at point", the arrowLoc of widget "P1", "64,420"
    check "anchor near the bottom: in window", the bottom of widget "P1", 460
    -- a row half hidden by its group is pointed at where it shows
    create group "Clip"
@@ -155,10 +156,10 @@ command runTests
    set the anchor of widget "P1" to the long id of field "Row"
    check "clip set-up: group", the rect of group "Clip", "400,300,500,330"
    check "clip set-up: field", the rect of field "Row", "400,300,500,360"
-   check "anchor clipped by its group", the arrowLoc of widget "P1", "500,315"
+   check "anchor clipped by its group", the arrowLoc of widget "P1", "504,315"
    -- the handlers given in the README
    showPopover the long id of widget "P1", the long id of button "Info", "left"
-   check "README showPopover points", the arrowLoc of widget "P1", "380,215"
+   check "README showPopover points", the arrowLoc of widget "P1", "384,215"
    check "README showPopover shows", the visible of widget "P1", true
    hidePopovers
    check "README hidePopovers", the visible of widget "P1", false

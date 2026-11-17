@@ -29,7 +29,7 @@ use com.livecode.engine
 
 metadata title is "Popover"
 metadata author is "Stam Kapetanakis"
-metadata version is "0.3.1"
+metadata version is "0.3.2"
 metadata preferredSize is "240,140"
 metadata svgicon is "M4,2h56a4,4,0,0,1,4,4v32a4,4,0,0,1,-4,4H38l-6,10l-6,-10H4a4,4,0,0,1,-4,-4V6a4,4,0,0,1,4,-4z"
 
@@ -450,7 +450,8 @@ Summary: Points the popover's arrow at a control or a rectangle
 
 Description:
 Setting the <anchor> moves the popover so that its arrow points at the middle
-of the edge of the anchor that faces it. Which edge that is follows from the
+of the edge of the anchor that faces it, with the tip 4 pixels away from that
+edge so the two do not touch. Which edge that is follows from the
 <arrowSide>: a popover with its arrow on the left sits to the right of its
 anchor, so the arrow points at the anchor's right edge.
 
@@ -1604,8 +1605,11 @@ private handler pointArrowAt(in pX as Number, in pY as Number) returns nothing
 	redraw all
 end handler
 
+-- The space left between an anchor and the tip of the arrow, in pixels.
+constant kAnchorGap is 4
+
 -- Points the arrow at the middle of the edge of pAnchor that faces the
--- popover. pAnchor is a rect ("left,top,right,bottom" in card coordinates)
+-- popover, kAnchorGap away from it. pAnchor is a rect ("left,top,right,bottom" in card coordinates)
 -- or a reference to a control, whose rect is used, less any part hidden by
 -- the groups it is in.
 private handler setAnchor(in pAnchor as String) returns nothing
@@ -1624,13 +1628,13 @@ private handler setAnchor(in pAnchor as String) returns nothing
 	put (tRect[1] + tRect[3]) / 2 into tMidX
 	put (tRect[2] + tRect[4]) / 2 into tMidY
 	if mArrowSide is "left" then
-		pointArrowAt(tRect[3], tMidY)
+		pointArrowAt(tRect[3] + kAnchorGap, tMidY)
 	else if mArrowSide is "right" then
-		pointArrowAt(tRect[1], tMidY)
+		pointArrowAt(tRect[1] - kAnchorGap, tMidY)
 	else if mArrowSide is "top" then
-		pointArrowAt(tMidX, tRect[4])
+		pointArrowAt(tMidX, tRect[4] + kAnchorGap)
 	else if mArrowSide is "bottom" then
-		pointArrowAt(tMidX, tRect[2])
+		pointArrowAt(tMidX, tRect[2] - kAnchorGap)
 	else
 		pointArrowAt(tMidX, tMidY)
 	end if

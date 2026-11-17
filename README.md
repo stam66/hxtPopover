@@ -99,7 +99,7 @@ The card only receives `mouseDown` for clicks on the card itself and on controls
 
 `anchor` and `arrowLoc` move the popover, without resizing it, so that its arrow points where you want.
 
-**At a control.** Set the `anchor` to a reference to the control. The arrow goes to the middle of the edge that faces the popover:
+**At a control.** Set the `anchor` to a reference to the control. The arrow goes to the middle of the edge that faces the popover, with its tip 4 pixels away from the control so the two do not touch:
 
 ```
 set the arrowSide of widget "Popover" to "left"
